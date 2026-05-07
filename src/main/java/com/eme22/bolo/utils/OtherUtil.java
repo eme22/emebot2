@@ -79,6 +79,8 @@ import net.dv8tion.jda.api.components.buttons.Button;
 import net.dv8tion.jda.api.components.actionrow.ActionRow;
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
+import net.dv8tion.jda.api.exceptions.ErrorHandler;
+import net.dv8tion.jda.api.requests.ErrorResponse;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -754,11 +756,11 @@ public class OtherUtil {
          EmbedBuilder eb = new EmbedBuilder();
          eb.setDescription(languageService.getMessage("command.avatar.for", new Object[]{user.getAsMention()}));
          eb.setImage(avatar);
-         e.editMessageEmbeds(eb.build()).queue();
+         e.editMessageEmbeds(eb.build()).queue(null, new ErrorHandler().ignore(ErrorResponse.UNKNOWN_MESSAGE));
          waitForAvatarButton(event, user, member, languageService, bot);
       }, 30L, TimeUnit.SECONDS, () -> {
          if (event instanceof CommandInteraction) {
-            ((CommandInteraction)event).getHook().editOriginalComponents(Collections.emptyList()).queue();
+            ((CommandInteraction)event).getHook().editOriginalComponents(Collections.emptyList()).queue(null, new ErrorHandler().ignore(ErrorResponse.UNKNOWN_MESSAGE));
          } else if (event instanceof CommandEvent) {
              // CommandEvent doesn't have a hook, but we can't easily edit the message here without the message object
              // JDA-Chewtils usually handles this or we can ignore it for text commands if it's too complex
