@@ -1,0 +1,370 @@
+[
+  {
+    "name": "net.dv8tion.jda.api.entities.Guild[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.api.entities.User[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.api.entities.Role[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.api.entities.Member[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.api.entities.Message[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.api.entities.channel.concrete.TextChannel[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.api.entities.channel.concrete.VoiceChannel[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.api.entities.channel.concrete.Category[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.api.entities.channel.concrete.StageChannel[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.api.entities.channel.concrete.NewsChannel[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.api.entities.channel.concrete.ForumChannel[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.api.entities.channel.middleman.MessageChannel[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.api.entities.channel.middleman.GuildChannel[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.api.entities.channel.middleman.AudioChannel[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.api.entities.channel.middleman.StandardGuildChannel[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.api.entities.ScheduledEvent[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.api.entities.sticker.Sticker[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.api.entities.sticker.StickerPack[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.api.entities.sticker.StickerItem[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.api.entities.sticker.GuildSticker[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.api.entities.sticker.StandardSticker[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.api.entities.emoji.Emoji[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.api.entities.emoji.CustomEmoji[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.api.entities.emoji.RichCustomEmoji[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.api.entities.Invite[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.api.entities.Webhook[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.api.entities.ApplicationTeam[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.api.interactions.commands.Command[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.api.entities.RichPresence[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.api.managers.AudioManager[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.api.managers.AudioManager",
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "net.dv8tion.jda.api.entities.Activity[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.internal.entities.GuildImpl",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.internal.entities.GuildImpl[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.internal.entities.MemberImpl",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.internal.entities.MemberImpl[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.internal.entities.UserImpl",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.internal.entities.UserImpl[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.internal.entities.RoleImpl",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.internal.entities.RoleImpl[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.internal.entities.MessageImpl",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.internal.entities.MessageImpl[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.internal.entities.GuildVoiceStateImpl",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.internal.entities.GuildVoiceStateImpl[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.internal.entities.channel.concrete.TextChannelImpl",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.internal.entities.channel.concrete.TextChannelImpl[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.internal.entities.channel.concrete.VoiceChannelImpl",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.internal.entities.channel.concrete.VoiceChannelImpl[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.internal.entities.channel.concrete.CategoryImpl",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.internal.entities.channel.concrete.CategoryImpl[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.internal.entities.channel.concrete.ThreadChannelImpl",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.internal.entities.channel.concrete.ThreadChannelImpl[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.internal.entities.channel.concrete.StageChannelImpl",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.internal.entities.channel.concrete.StageChannelImpl[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.internal.entities.channel.concrete.NewsChannelImpl",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.internal.entities.channel.concrete.NewsChannelImpl[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.internal.entities.channel.concrete.ForumChannelImpl",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.api.entities.channel.forums.ForumTag[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.api.entities.channel.forums.ForumTag",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.api.entities.automod.AutoModRule[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.api.entities.automod.AutoModRule",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.api.entities.automod.AutoModExecution[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.api.entities.automod.AutoModResponse[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.internal.entities.channel.concrete.MediaChannelImpl",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.api.entities.ThreadMember[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.api.entities.ThreadMember",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.internal.entities.ThreadMemberImpl",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.internal.entities.ThreadMemberImpl[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent",
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "net.dv8tion.jda.api.events.interaction.component.StringSelectInteractionEvent",
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "net.dv8tion.jda.api.events.interaction.component.EntitySelectInteractionEvent",
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "net.dv8tion.jda.api.events.interaction.ModalInteractionEvent",
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "net.dv8tion.jda.api.events.GenericEvent",
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "net.dv8tion.jda.api.hooks.EventListener",
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredFields": true
+  }
+]

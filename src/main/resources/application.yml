@@ -1,0 +1,185 @@
+quarkus:
+  native:
+    resources:
+      includes: "messages*.properties"
+    additional-build-args: "-Dlog4j2.disable.jmx=true,-H:IncludeResourceBundles=messages,--initialize-at-run-time=com.neovisionaries.ws.client.Misc\\,net.dv8tion.jda.internal.audio.CryptoAdapter$AbstractAaedAdapter\\,net.dv8tion.jda.internal.requests.restaction.MessageCreateActionImpl\\,org.apache.http.impl.auth.NTLMEngineImpl\\,com.eme22.bolo.nsfw.NSFWStrings\\,sun.java2d.Disposer\\,sun.font.SunFontManager\\,sun.font.TrueTypeFont\\,sun.font.FontDesignMetrics\\,java.awt.Toolkit\\,java.awt.Component\\,io.smallrye.common.ref.References"
+  http:
+    port: 8081
+
+jda:
+  token: ${JDA_TOKEN}
+
+config:
+  prefix: "@mention"
+  altprefix: "NONE"
+  help: "help"
+  playlistsfolder: "Playlists"
+  success: "✅"
+  warning: "💡"
+  error: "🚫"
+  loading: "⌚"
+  searching: "🔎"
+  welcome: "@username Bienvenido al servidor @servername, disfruta tu estadia."
+  goodbye: "@username se ha ido."
+  stayinchannel: false
+  songinstatus: false
+  nowplayingimages: false
+  update: true
+  eval: false
+  owner: 498627624483028992
+  maxseconds: 0
+  alonetimeuntilstop: 0
+  game: "Escribe @Sentinel help en el md para mas información"
+  discordChannel: "https://discord.gg/Wt4U4D5GkF"
+  nogui-title: "EMBot"
+  nogui-message: "Switching to nogui mode. You can manually start in nogui mode by including the -Dnogui=true flag."
+  clientToken: ${CLIENT_TOKEN}
+  aliases:
+    sendmessageas: [ "sendmessageasuser" ]
+    settingTEST: [ "status" ]
+    lyrics: [ "l" ]
+    nowplaying: [ "np", "current" ]
+    play: [ "p" ]
+    playlists: [ "pls" ]
+    queue: [ "list" ]
+    remove: [ "delete" ]
+    scsearch: [ "soundcloudsearch" ]
+    search: [ "ytsearch" ]
+    shuffle: [ "mix" ]
+    voteskip: [ "skip", "vs" ]
+    prefix: [ "setprefix" ]
+    setadmin: [ "setadminrole" ]
+    sethello: [ "setwelcomechannel", "setgreetchannel" ]
+    setgoodbye: [ "setleavechannel" ]
+    addimgch: [ "addimagechannel" ]
+    delimagechannel: [ "removeimgch" ]
+    setdj: [ "setdjrole" ]
+    setskip: [ "setskippercent", "skippercent", "setskipratio" ]
+    settc: [ "settextchannel" ]
+    setvc: [ "setvoicechannel" ]
+    forceremove: [ "forcedelete", "modremove", "modelete" ]
+    forceskip: [ "modskip", "skip" ]
+    movetrack: [ "move" ]
+    pause: [ "suspend" ]
+    playnext: [ "next" ]
+    repeat: [ "repeatmode" ]
+    skipto: [ "jumpto" ]
+    stop: [ "leave" ]
+    volume: [ "vol" ]
+    setlang: [ "setlanguage" ]
+    setbdaychan: [ "setbirthdaychannel", "setbdaychannel", "setcumplechannel", "setcumpleañoschannel" ]
+    clear: [ "borrar" ]
+    addmeme: [ "agregarmeme" ]
+    togglelinkenhancer: [ "tle" ]
+    shutdown: [ "apagar" ]
+    listlinkenhancer: [ "lle" ]
+    avatar: [ "av", "foto" ]
+    poke: [ "toque" ]
+    forcebirthdaycurrent: [ "fbc" ]
+    addlinkenhancer: [ "ale" ]
+    cum: [ "semen" ]
+    slap: [ "bofetada", "golpear" ]
+    8ballanswers: [ "respuestasbola8" ]
+    setwelcomeimg: [ "setwelcomeimage", "swi" ]
+    forcebirthday: [ "fb" ]
+    reloadnodes: [ "rn" ]
+    enableantiraidmode: [ "earm", "antiraid" ]
+    memelist: [ "listamemes" ]
+    removelinkenhancer: [ "rle" ]
+    setbirthday: [ "setcumple" ]
+    rolemsgtoggledbuild: [ "rmtb" ]
+    clonechannel: [ "clonarcanal" ]
+    rolemsgbuild: [ "rmb" ]
+    autoplaylist: [ "ap" ]
+    clonechannel2: [ "clonarcanal2" ]
+    bite: [ "morder" ]
+    meme: [ "momo" ]
+    debug: [ "dbg" ]
+    eval: [ "e" ]
+    setavatar: [ "setav" ]
+    del8ballanswer: [ "borrarrespuesta8ball" ]
+    setgoodbyemessage: [ "setgoodbyemsg", "sgm" ]
+    message: [ "mensaje" ]
+    kiss: [ "besar" ]
+    8ball: [ "bola8", "pregunta" ]
+    sethelloenabled: [ "she" ]
+    messagext: [ "mensajeext" ]
+    setgoodbyeenabled: [ "sge" ]
+    sendom: [ "enviarom" ]
+    anal: [ "pordetras" ]
+    settings: [ "configuracion" ]
+    removebirthday: [ "borrarcumple" ]
+    showimgch: [ "mostrarimgch" ]
+    playlist: [ "pl" ]
+    setname: [ "setnombre" ]
+    removechanneltolinkenhancer: [ "rctle" ]
+    delmeme: [ "borrarmeme" ]
+    setwelcomemsg: [ "swm" ]
+    add8ballanswer: [ "agregarrespuesta8ball" ]
+    birthdaytemplate: [ "plantillacumple" ]
+    poll: [ "encuesta" ]
+    lick: [ "lamer" ]
+    help: [ "ayuda", "comandos" ]
+    addchanneltolinkenhancer: [ "actle" ]
+    fuck: [ "follar", "cogeme" ]
+    setgame: [ "setjuego" ]
+    setgoodbyeimage: [ "setgoodbyeimg", "sgi" ]
+    getbirthdays: [ "vercumples" ]
+    message2: [ "mensaje2" ]
+    submitartwork: [ "enviararte" ]
+
+lavalink:
+  servers:
+    - name: Node1
+      host: 192.168.18.164
+      port: 2333
+      password: ${LAVALINK_PASSWORD}
+      region: peru
+      secure: false
+      timeout: 10000
+
+"%dev":
+  jda:
+    token: ${DEV_JDA_TOKEN}
+  lavalink:
+    servers:
+      - name: DevNode
+        host: 10.241.251.82
+        port: 2333
+        password: ${DEV_LAVALINK_PASSWORD}
+        region: peru
+        secure: false
+        timeout: 10000
+  quarkus:
+    datasource:
+      db-kind: mariadb
+      username: ${DEV_DB_USER}
+      password: ${DEV_DB_PASS}
+      jdbc:
+        url: jdbc:mariadb://10.241.251.82:3306/s15_mbot
+    hibernate-orm:
+      database:
+        generation: update
+      enable-lazy-load-no-trans: true
+
+"%prod":
+  quarkus:
+    datasource:
+      db-kind: mariadb
+      username: ${DB_USER:mbot}
+      password: ${DB_PASS:mbot}
+      jdbc:
+        url: jdbc:mariadb://192.168.18.164:3306/${DB_NAME:mbot}
+    hibernate-orm:
+      database:
+        generation: update
+      enable-lazy-load-no-trans: true
+  lavalink:
+    servers:
+      - name: ProdNode
+        host: 192.168.18.164
+        port: 2333
+        password: ${LAVALINK_PASSWORD}
+        region: peru
+        secure: false
+        timeout: 10000

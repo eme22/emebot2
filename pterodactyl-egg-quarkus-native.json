@@ -1,0 +1,68 @@
+{
+    "_comment": "DO NOT EDIT: FILE GENERATED AUTOMATICALLY",
+    "meta": {
+        "version": "PTDL_v1",
+        "update_url": null
+    },
+    "exported_at": "2026-01-04T23:30:00Z",
+    "name": "EmBot Quarkus Native",
+    "author": "msb1999711@gmail.com",
+    "description": "Egg para ejecutar la imagen nativa de Quarkus de EmBot. Requiere que el binario compilado (runner) sea subido al servidor.",
+    "features": null,
+    "docker_images": {
+        "Red Hat UBI 9 Minimal": "registry.access.redhat.com/ubi9/ubi-minimal:9.5"
+    },
+    "file_denylist": [],
+    "startup": "chmod +x {{BINARY_NAME}}; ./{{BINARY_NAME}} -Dquarkus.http.host=0.0.0.0 -Dquarkus.http.port={{SERVER_PORT}} -Dquarkus.config.locations=./application.yml",
+    "config": {
+        "files": "{}",
+        "startup": "{\r\n    \"done\": \"Listening on:\"\r\n}",
+        "logs": "{}",
+        "stop": "^C"
+    },
+    "scripts": {
+        "installation": {
+            "script": "#!/bin/bash\n# Este script se ejecuta al instalar el servidor.\n# Como es un binario personalizado, se espera que el usuario lo suba manualmente.\n\necho \"Instalación completada. Por favor sube el archivo binario nativo (ej. embot-runner) y el archivo application.yml al directorio raíz del servidor.\"",
+            "container": "registry.access.redhat.com/ubi9/ubi-minimal:9.5",
+            "entrypoint": "bash"
+        }
+    },
+    "variables": [
+        {
+            "name": "Nombre del Binario",
+            "description": "El nombre del archivo ejecutable nativo subido al servidor.",
+            "env_variable": "BINARY_NAME",
+            "default_value": "embot-runner",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string"
+        },
+        {
+            "name": "JDA Token",
+            "description": "Token del Bot de Discord.",
+            "env_variable": "JDA_TOKEN",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string"
+        },
+        {
+            "name": "Client Token",
+            "description": "Token de Cliente (si aplica).",
+            "env_variable": "CLIENT_TOKEN",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string"
+        },
+        {
+            "name": "Quarkus Profile",
+            "description": "Perfil de Quarkus a utilizar (ej. mysql, dev, prod).",
+            "env_variable": "QUARKUS_PROFILE",
+            "default_value": "mysql",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string"
+        }
+    ]
+}

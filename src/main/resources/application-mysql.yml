@@ -1,0 +1,13 @@
+quarkus:
+  datasource:
+    db-kind: mariadb
+    username: ${MYSQLUSER}
+    password: ${MYSQLPASSWORD}
+    jdbc:
+      url: jdbc:mariadb://192.168.18.164:3306/embot
+  hibernate-orm:
+    log:
+      sql: false
+    database:
+      generation: update
+    enable-lazy-load-no-trans: true

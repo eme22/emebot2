@@ -1,0 +1,95 @@
+{
+    "_comment": "DO NOT EDIT: FILE GENERATED AUTOMATICALLY",
+    "meta": {
+        "version": "PTDL_v1",
+        "update_url": null
+    },
+    "exported_at": "2026-04-18T02:50:00Z",
+    "name": "EmBot Prod Native",
+    "author": "msb1999711@gmail.com",
+    "description": "Egg para ejecutar el contenedor Docker de producción nativo de EmBot. Configurado con MariaDB y Lavalink.",
+    "features": null,
+    "docker_images": {
+        "EmBot Prod": "emebot:prod"
+    },
+    "file_denylist": [],
+    "startup": "./application -Dquarkus.http.host=0.0.0.0 -Dquarkus.http.port={{SERVER_PORT}} -Djava.awt.headless=true",
+    "config": {
+        "files": "{}",
+        "startup": "{\r\n    \"done\": \"Listening on:\"\r\n}",
+        "logs": "{}",
+        "stop": "^C"
+    },
+    "scripts": {
+        "installation": {
+            "script": "#!/bin/bash\necho \"Instalación completada.\"",
+            "container": "registry.access.redhat.com/ubi9/ubi-minimal:9.5",
+            "entrypoint": "bash"
+        }
+    },
+    "variables": [
+        {
+            "name": "JDA Token",
+            "description": "Token del Bot de Discord.",
+            "env_variable": "JDA_TOKEN",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string"
+        },
+        {
+            "name": "Database Host",
+            "description": "Host de la base de datos MariaDB.",
+            "env_variable": "DB_HOST",
+            "default_value": "192.168.18.164",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string"
+        },
+        {
+            "name": "Database Name",
+            "description": "Nombre de la base de datos.",
+            "env_variable": "DB_NAME",
+            "default_value": "mbot",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string"
+        },
+        {
+            "name": "Database User",
+            "description": "Usuario de la base de datos.",
+            "env_variable": "DB_USER",
+            "default_value": "mbot",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string"
+        },
+        {
+            "name": "Database Password",
+            "description": "Contraseña de la base de datos.",
+            "env_variable": "DB_PASS",
+            "default_value": "mbot",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string"
+        },
+        {
+            "name": "Lavalink Password",
+            "description": "Contraseña de los nodos de Lavalink.",
+            "env_variable": "LAVALINK_PASSWORD",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string"
+        },
+        {
+            "name": "Quarkus Profile",
+            "description": "Perfil de Quarkus a utilizar.",
+            "env_variable": "QUARKUS_PROFILE",
+            "default_value": "prod",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string"
+        }
+    ]
+}
