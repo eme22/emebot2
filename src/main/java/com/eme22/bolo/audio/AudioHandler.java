@@ -219,7 +219,9 @@ public class AudioHandler {
          if (this.queueManager.getQueue().isEmpty()) {
             if (!this.playFromDefault()) {
                this.playerManager.getNowplayingHandler().onTrackUpdate(this.guildId, null, this, lang);
-               this.playerManager.destroyPlayer(this.guildId);
+               if (!this.playerManager.isStayInChannel()) {
+                   this.playerManager.destroyPlayer(this.guildId);
+               }
             }
          } else {
             QueuedTrack qt = this.queueManager.getQueue().pull();
@@ -443,8 +445,12 @@ public class AudioHandler {
    }
 
    public void onTrackEnd(TrackEndEvent event) {
-      RepeatMode repeatMode = this.playerManager.getBot().getSettingsManager().getSettings(this.guildId).getRepeatMode();
       dev.arbjerg.lavalink.protocol.v4.Message.EmittedEvent.TrackEndEvent.AudioTrackEndReason endReason = event.getEndReason();
+      if (endReason == AudioTrackEndReason.REPLACED || endReason == AudioTrackEndReason.CLEANUP) {
+         return;
+      }
+
+      RepeatMode repeatMode = this.playerManager.getBot().getSettingsManager().getSettings(this.guildId).getRepeatMode();
       dev.arbjerg.lavalink.client.player.Track track = event.getTrack();
       if (endReason == AudioTrackEndReason.FINISHED && repeatMode != RepeatMode.OFF) {
          QueuedTrack clone = new QueuedTrack(track.makeClone(), track.getUserData(RequestMetadata.class));
@@ -459,7 +465,9 @@ public class AudioHandler {
          if (!this.playFromDefault()) {
             LanguageService lang = this.playerManager.getBot().getSettingsManager().getLanguageService(this.guildId);
             this.playerManager.getNowplayingHandler().onTrackUpdate(this.guildId, null, this, lang);
-            this.playerManager.destroyPlayer(this.guildId);
+            if (!this.playerManager.isStayInChannel()) {
+                this.playerManager.destroyPlayer(this.guildId);
+            }
          }
       } else {
          QueuedTrack qt = this.queueManager.getQueue().pull();
