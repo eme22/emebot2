@@ -713,7 +713,7 @@ public class OtherUtil {
       if (member != null && member.getAvatarId() != null) {
          Button globalBtn = Button.secondary("avatar_global_" + user.getId(), languageService.getMessage("command.avatar.button.global"));
          Button serverBtn = Button.secondary("avatar_server_" + user.getId(), languageService.getMessage("command.avatar.button.server"));
-         event.replyEmbeds(eb.build()).addActionRow(globalBtn, serverBtn).queue(success -> {
+         event.replyEmbeds(eb.build()).setComponents(ActionRow.of(globalBtn, serverBtn)).queue(success -> {
             statsService.updateImagesSend(event.getGuild().getIdLong());
             waitForAvatarButton(event, user, member, languageService, bot);
          });
