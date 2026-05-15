@@ -81,6 +81,9 @@ import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.exceptions.ErrorHandler;
 import net.dv8tion.jda.api.requests.ErrorResponse;
+import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.interactions.InteractionHook;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -713,11 +716,12 @@ public class OtherUtil {
       eb.setDescription(languageService.getMessage("command.avatar.for", new Object[]{user.getAsMention()}));
       eb.setImage(avatar);
       if (member != null && member.getAvatarId() != null) {
-         Button globalBtn = Button.secondary("avatar_global_" + user.getId(), languageService.getMessage("command.avatar.button.global"));
-         Button serverBtn = Button.secondary("avatar_server_" + user.getId(), languageService.getMessage("command.avatar.button.server"));
-         event.replyEmbeds(eb.build()).setComponents(ActionRow.of(globalBtn, serverBtn)).queue(success -> {
+         String uniqueId = UUID.randomUUID().toString().substring(0, 8);
+         Button globalBtn = Button.secondary("avatar:global:" + uniqueId + ":" + user.getId(), languageService.getMessage("command.avatar.button.global"));
+         Button serverBtn = Button.secondary("avatar:server:" + uniqueId + ":" + user.getId(), languageService.getMessage("command.avatar.button.server"));
+         event.replyEmbeds(eb.build()).setComponents(ActionRow.of(globalBtn, serverBtn)).queue(hook -> {
             statsService.updateImagesSend(event.getGuild().getIdLong());
-            waitForAvatarButton(event, user, member, languageService, bot);
+            waitForAvatarButton(hook, event.getUser().getIdLong(), user, member, languageService, bot, uniqueId);
          });
       } else {
          event.replyEmbeds(eb.build()).queue(success -> statsService.updateImagesSend(event.getGuild().getIdLong()));
@@ -734,47 +738,43 @@ public class OtherUtil {
       eb.setDescription(languageService.getMessage("command.avatar.for", new Object[]{user.getAsMention()}));
       eb.setImage(avatar);
       if (member != null && member.getAvatarId() != null) {
-         Button globalBtn = Button.secondary("avatar_global_" + user.getId(), languageService.getMessage("command.avatar.button.global"));
-         Button serverBtn = Button.secondary("avatar_server_" + user.getId(), languageService.getMessage("command.avatar.button.server"));
+         String uniqueId = UUID.randomUUID().toString().substring(0, 8);
+         Button globalBtn = Button.secondary("avatar:global:" + uniqueId + ":" + user.getId(), languageService.getMessage("command.avatar.button.global"));
+         Button serverBtn = Button.secondary("avatar:server:" + uniqueId + ":" + user.getId(), languageService.getMessage("command.avatar.button.server"));
          MessageCreateBuilder mb = new MessageCreateBuilder();
          mb.setEmbeds(eb.build());
          mb.setComponents(ActionRow.of(globalBtn, serverBtn));
-         event.getChannel().sendMessage(mb.build()).queue(success -> {
+         event.getChannel().sendMessage(mb.build()).queue(message -> {
             statsService.updateImagesSend(event.getGuild().getIdLong());
-            waitForAvatarButton(event, user, member, languageService, bot);
+            waitForAvatarButton(message, event.getAuthor().getIdLong(), user, member, languageService, bot, uniqueId);
          });
       } else {
          event.reply(eb.build(), success -> statsService.updateImagesSend(event.getGuild().getIdLong()));
       }
    }
 
-   private static void waitForAvatarButton(Object event, User user, Member member, LanguageService languageService, Bot bot) {
+   private static void waitForAvatarButton(Object hookOrMessage, long authorId, User user, Member member, LanguageService languageService, Bot bot, String uniqueId) {
+      String globalId = "avatar:global:" + uniqueId + ":" + user.getId();
+      String serverId = "avatar:server:" + uniqueId + ":" + user.getId();
+
       bot.getWaiter().waitForEvent(ButtonInteractionEvent.class, (e) -> {
-         return e.getComponentId().startsWith("avatar_") && e.getComponentId().endsWith(user.getId()) && e.getUser().getIdLong() == getAuthorId(event);
+         return (e.getComponentId().equals(globalId) || e.getComponentId().equals(serverId)) && e.getUser().getIdLong() == authorId;
       }, (e) -> {
-         String avatar = e.getComponentId().startsWith("avatar_global") ? user.getEffectiveAvatarUrl() + "?size=512" : member.getEffectiveAvatarUrl() + "?size=512";
+         String avatar = e.getComponentId().equals(globalId) ? user.getEffectiveAvatarUrl() + "?size=512" : member.getEffectiveAvatarUrl() + "?size=512";
          EmbedBuilder eb = new EmbedBuilder();
          eb.setDescription(languageService.getMessage("command.avatar.for", new Object[]{user.getAsMention()}));
          eb.setImage(avatar);
          e.editMessageEmbeds(eb.build()).queue(null, new ErrorHandler().ignore(ErrorResponse.UNKNOWN_MESSAGE));
-         waitForAvatarButton(event, user, member, languageService, bot);
+         waitForAvatarButton(hookOrMessage, authorId, user, member, languageService, bot, uniqueId);
       }, 30L, TimeUnit.SECONDS, () -> {
-         if (event instanceof CommandInteraction) {
-            ((CommandInteraction)event).getHook().editOriginalComponents(Collections.emptyList()).queue(null, new ErrorHandler().ignore(ErrorResponse.UNKNOWN_MESSAGE));
-         } else if (event instanceof CommandEvent) {
-             // CommandEvent doesn't have a hook, but we can't easily edit the message here without the message object
-             // JDA-Chewtils usually handles this or we can ignore it for text commands if it's too complex
+         if (hookOrMessage instanceof InteractionHook) {
+            ((InteractionHook) hookOrMessage).editOriginalComponents(Collections.emptyList()).queue(null, new ErrorHandler().ignore(ErrorResponse.UNKNOWN_MESSAGE));
+         } else if (hookOrMessage instanceof Message) {
+            ((Message) hookOrMessage).editMessageComponents(Collections.emptyList()).queue(null, new ErrorHandler().ignore(ErrorResponse.UNKNOWN_MESSAGE));
          }
       });
    }
 
-   private static long getAuthorId(Object event) {
-      if (event instanceof CommandInteraction) {
-         return ((CommandInteraction)event).getUser().getIdLong();
-      } else {
-         return event instanceof CommandEvent ? ((CommandEvent)event).getAuthor().getIdLong() : 0L;
-      }
-   }
 
    public static String numtoString(int n) {
       String str;
