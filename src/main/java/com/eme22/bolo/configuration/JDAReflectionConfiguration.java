@@ -61,7 +61,17 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
         net.dv8tion.jda.api.components.selections.StringSelectMenu.class,
         net.dv8tion.jda.api.components.actionrow.ActionRow.class,
         com.jagrosh.jdautilities.command.CommandClient.class,
-        com.jagrosh.jdautilities.commons.waiter.EventWaiter.class
+        com.jagrosh.jdautilities.commons.waiter.EventWaiter.class,
+        net.dv8tion.jda.api.events.session.ReadyEvent.class,
+        net.dv8tion.jda.api.events.session.ShutdownEvent.class,
+        net.dv8tion.jda.api.events.guild.GuildJoinEvent.class,
+        net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent.class,
+        net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent.class,
+        net.dv8tion.jda.api.events.guild.voice.GuildVoiceUpdateEvent.class,
+        net.dv8tion.jda.api.events.message.MessageDeleteEvent.class,
+        net.dv8tion.jda.api.events.message.MessageReceivedEvent.class,
+        net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent.class,
+        net.dv8tion.jda.api.events.message.react.MessageReactionRemoveEvent.class
     },
     classNames = {
         "net.dv8tion.jda.internal.entities.GuildImpl",

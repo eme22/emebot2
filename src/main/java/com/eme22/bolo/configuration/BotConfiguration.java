@@ -24,7 +24,6 @@ import dev.arbjerg.lavalink.client.LavalinkNode;
 import dev.arbjerg.lavalink.client.NodeOptions.Builder;
 import dev.arbjerg.lavalink.client.event.*;
 import dev.arbjerg.lavalink.libraries.jda.JDAVoiceUpdateListener;
-import java.awt.Color;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -87,6 +86,10 @@ public class BotConfiguration {
    private static final String END_TOKEN = "/// END OF JMUSICBOT CONFIG ///";
    @ConfigProperty(name = "jda.token")
    String token;
+   @ConfigProperty(name = "jda.shardId", defaultValue = "0")
+   int shardId;
+   @ConfigProperty(name = "jda.totalShards", defaultValue = "1")
+   int totalShards;
    @ConfigProperty(name = "config.prefix")
    String prefix;
    @ConfigProperty(name = "config.altprefix")
@@ -168,7 +171,10 @@ public class BotConfiguration {
 
       log.info("Adding {} total listeners to JDA", allListeners.size());
 
+      log.info("Starting JDA with Shard {} of {}", this.shardId, this.totalShards);
+
       JDA jda = JDABuilder.create(this.token, Arrays.asList(INTENTS))
+         .useSharding(this.shardId, this.totalShards)
          .enableCache(CacheFlag.MEMBER_OVERRIDES, new CacheFlag[]{CacheFlag.VOICE_STATE})
          .disableCache(CacheFlag.ACTIVITY, new CacheFlag[]{CacheFlag.CLIENT_STATUS, CacheFlag.EMOJI, CacheFlag.ONLINE_STATUS})
          .setActivity(nogame ? null : Activity.playing("loading..."))
@@ -245,11 +251,7 @@ public class BotConfiguration {
       return this.useEval ? new EvalCmd(bot) : null;
    }
 
-   @Produces
-   @Singleton
-   public Color colorBean() {
-      return Color.CYAN;
-   }
+
 
    @Produces
    @Singleton

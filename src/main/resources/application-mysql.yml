@@ -10,4 +10,5 @@ quarkus:
       sql: false
     database:
       generation: update
-    enable-lazy-load-no-trans: true
+    unsupported-properties:
+      "hibernate.enable_lazy_load_no_trans": true

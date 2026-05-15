@@ -7,8 +7,9 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
  * Register classes that are accessed via reflection here.
  */
 @RegisterForReflection(targets = {
-    // JDA and Lavalink classes might need reflection.
-    // If you encounter ClassNotFoundException or similar in native mode, add the classes here.
+    com.eme22.bolo.model.Birthday.class,
+    com.eme22.bolo.model.Server.class,
+    com.eme22.bolo.utils.OtherUtil.class
 })
 public class NativeReflectionConfig {
 }

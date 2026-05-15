@@ -6,7 +6,6 @@ import com.eme22.bolo.audio.AloneInVoiceHandler;
 import com.eme22.bolo.audio.AudioHandler;
 import com.eme22.bolo.audio.PlayerManager;
 import com.eme22.bolo.birthday.BirthdayManager;
-import com.eme22.bolo.gui.GUI;
 import com.eme22.bolo.image.ArtworkImageService;
 import com.eme22.bolo.language.LanguageService;
 import com.eme22.bolo.playlist.PlaylistLoader;
@@ -26,8 +25,10 @@ import jakarta.inject.Inject;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import io.quarkus.scheduler.Scheduled;
+import io.quarkus.runtime.annotations.RegisterForReflection;
 
 @ApplicationScoped
+@RegisterForReflection(methods = true)
 @Slf4j
 public class Bot {
    @Generated
@@ -42,7 +43,6 @@ public class Bot {
    private final ArtworkImageService artworkImageService;
    private boolean shuttingDown = false;
    private boolean devMode = false;
-   private GUI GUI;
    private JDA JDA;
    private Activity activity;
    @ConfigProperty(name = "config.game")
@@ -104,9 +104,6 @@ public class Bot {
             this.JDA.shutdown();
          }
 
-         if (this.GUI != null) {
-            this.GUI.dispose();
-         }
 
          System.exit(0);
       }
@@ -169,10 +166,6 @@ public class Bot {
       return this.devMode;
    }
 
-   @Generated
-   public GUI getGUI() {
-      return this.GUI;
-   }
 
    @Generated
    public JDA getJDA() {
@@ -199,10 +192,6 @@ public class Bot {
       this.devMode = devMode;
    }
 
-   @Generated
-   public void setGUI(final GUI GUI) {
-      this.GUI = GUI;
-   }
 
    @Generated
    public void setJDA(final JDA JDA) {

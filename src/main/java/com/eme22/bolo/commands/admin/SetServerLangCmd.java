@@ -29,10 +29,12 @@ import jakarta.inject.Singleton;
 public class SetServerLangCmd extends AdminCommand {
    @Generated
    
-   public static final List<SelectOption> OPTIONS = List.of(
-      SelectOption.of("EspaÃ±ol", "es").withDescription("Selecciona el idioma EspaÃ±ol").withEmoji(Emoji.fromUnicode("\ud83c\uddea\ud83c\uddf8")),
-      SelectOption.of("English", "en").withDescription("Select English language").withEmoji(Emoji.fromUnicode("\ud83c\uddfa\ud83c\uddf8"))
-   );
+   private static List<SelectOption> getLanguageOptions() {
+      return List.of(
+         SelectOption.of("Español", "es").withDescription("Selecciona el idioma Español").withEmoji(Emoji.fromUnicode("\ud83c\uddea\ud83c\uddf8")),
+         SelectOption.of("English", "en").withDescription("Select English language").withEmoji(Emoji.fromUnicode("\ud83c\uddfa\ud83c\uddf8"))
+      );
+   }
    private Bot bot;
    @ConfigProperty(name = "config.aliases.setlang", defaultValue = "")
    protected String[] aliases;
@@ -50,7 +52,7 @@ public class SetServerLangCmd extends AdminCommand {
    protected void execute(CommandEvent event) {
       LanguageService languageService = this.bot.getSettingsManager().getLanguageService(event.getGuild());
       StringSelectMenu menu = StringSelectMenu.create("setlang")
-         .addOptions(OPTIONS)
+         .addOptions(getLanguageOptions())
          .setDefaultValues(new String[]{languageService.getLocale().getLanguage()})
          .build();
       event.getTextChannel().sendMessage(languageService.getMessage("command.setlang.message"))
@@ -61,7 +63,7 @@ public class SetServerLangCmd extends AdminCommand {
    protected void execute(SlashCommandEvent event) {
       LanguageService languageService = this.bot.getSettingsManager().getLanguageService(event.getGuild());
       StringSelectMenu menu = StringSelectMenu.create("setlang")
-         .addOptions(OPTIONS)
+         .addOptions(getLanguageOptions())
          .setDefaultValues(new String[]{languageService.getLocale().getLanguage()})
          .build();
       log.info("Languages {}", this.bot.getSettingsManager().getLanguageServices());

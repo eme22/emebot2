@@ -9,7 +9,6 @@ import com.eme22.bolo.utils.Constants;
 import com.jagrosh.jdautilities.command.CommandEvent;
 import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import com.jagrosh.jdautilities.commons.JDAUtilitiesInfo;
-import java.awt.Color;
 import lombok.Generated;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
@@ -30,15 +29,14 @@ public class AboutCmd extends BaseCommand {
    
    private boolean IS_AUTHOR = true;
    private String REPLACEMENT_ICON = "+";
-   private final Color color;
+   private final int color = 0x00CCCC;
    private final String description;
    private final Permission[] perms;
    private static String oauthLink;
    private final String[] features;
 
    @Inject
-   public AboutCmd(Color color, @ConfigProperty(name = "quarkus.application.version", defaultValue = "0.0.1") String version) {
-      this.color = color;
+   public AboutCmd(@ConfigProperty(name = "quarkus.application.version", defaultValue = "0.0.1") String version) {
       this.description = String.format("Hola soy Sentinel' un BOT con lag) (v%s) ", version);
       this.features = Constants.features;
       this.name = "about";
@@ -54,7 +52,7 @@ public class AboutCmd extends BaseCommand {
       }
 
       EmbedBuilder builder = new EmbedBuilder();
-      builder.setColor(event.isFromType(ChannelType.TEXT) ? event.getGuild().getSelfMember().getColor() : this.color);
+      builder.setColor(event.isFromType(ChannelType.TEXT) ? event.getGuild().getSelfMember().getColorRaw() : this.color);
       builder.setAuthor("Informacion de " + event.getJDA().getSelfUser().getName() + "!", null, event.getJDA().getSelfUser().getAvatarUrl());
       boolean join = event.getClient().getServerInvite() != null && !event.getClient().getServerInvite().isEmpty();
       boolean inv = !oauthLink.isEmpty();
@@ -139,7 +137,7 @@ public class AboutCmd extends BaseCommand {
       }
 
       EmbedBuilder builder = new EmbedBuilder();
-      builder.setColor(event.isFromType(ChannelType.TEXT) ? event.getGuild().getSelfMember().getColor() : this.color);
+      builder.setColor(event.isFromType(ChannelType.TEXT) ? event.getGuild().getSelfMember().getColorRaw() : this.color);
       builder.setAuthor("Informacion de " + event.getSelfUser().getName() + "!", null, event.getSelfUser().getAvatarUrl());
       boolean join = event.getClient().getServerInvite() != null && !event.getClient().getServerInvite().isEmpty();
       boolean inv = !oauthLink.isEmpty();

@@ -15,16 +15,14 @@ import com.eme22.discordcdn.model.RefreshedUrl;
 import com.jagrosh.jdautilities.command.CommandEvent;
 import com.jagrosh.jlyrics.Lyrics;
 import com.jagrosh.jlyrics.LyricsClient;
-import java.awt.AlphaComposite;
-import java.awt.BasicStroke;
+import com.sksamuel.scrimage.ImmutableImage;
+import com.sksamuel.scrimage.nio.PngWriter;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.FontFormatException;
-import java.awt.FontMetrics;
 import java.awt.Graphics2D;
-import java.awt.Image;
 import java.awt.RenderingHints;
-import java.awt.geom.Ellipse2D.Float;
+import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.File;
@@ -50,8 +48,6 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
-import javax.imageio.IIOException;
-import javax.imageio.ImageIO;
 import lombok.Generated;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.OnlineStatus;
@@ -276,77 +272,26 @@ public class OtherUtil {
       return sb.toString();
    }
 
-   public static void crateImage2(String username, String message, BufferedImage background, BufferedImage avatar, String outputFilePath) throws IOException, FontFormatException {
-      InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream("trans.ttf");
-      if (is == null) {
-         log.error("No hay una fuente ttf configurada!!!");
-      } else {
-         BufferedImage welcomeImage = new BufferedImage(1000, 500, 2);
-         Graphics2D g2d = welcomeImage.createGraphics();
-         g2d.drawImage(background, 0, 0, 1000, 500, null);
-         Font font = Font.createFont(0, is).deriveFont(90.0F);
-         g2d.setFont(font);
-         g2d.setColor(Color.WHITE);
-         FontMetrics fontMetrics = g2d.getFontMetrics();
-         int usernameWidth = fontMetrics.stringWidth(username);
-         int usernameHeight = fontMetrics.getHeight();
-         int usernameX = (1000 - usernameWidth) / 2;
-         int usernameY = 50 + usernameHeight;
-         g2d.drawString(username, usernameX, usernameY);
-         BufferedImage circleImage = createCircleImage(avatar, 250);
-         int avatarX = 375;
-         int avatarY = (200 - usernameHeight) / 2 + usernameHeight;
-         g2d.drawImage(circleImage, avatarX, avatarY, null);
-         font = font.deriveFont(70.0F);
-         g2d.setFont(font);
-         g2d.setColor(Color.WHITE);
-         int welcomeWidth = fontMetrics.stringWidth(message);
-         int welcomeHeight = fontMetrics.getHeight();
-         int welcomeX = (1000 - welcomeWidth) / 2;
-         int welcomeY = 450 - welcomeHeight;
-         g2d.drawString(message, welcomeX, welcomeY);
-         g2d.dispose();
-         File outputfile = new File(outputFilePath);
-         ImageIO.write(welcomeImage, "png", outputfile);
-      }
-   }
-
-   private static BufferedImage createCircleImage(BufferedImage image, int size) {
-      BufferedImage circleImage = new BufferedImage(size, size, 2);
-      Graphics2D g2d = circleImage.createGraphics();
-      g2d.setColor(Color.BLACK);
-      g2d.fillOval(0, 0, size, size);
-      int x = (size - image.getWidth()) / 2;
-      int y = (size - image.getHeight()) / 2;
-      g2d.drawImage(image, x, y, null);
-      g2d.dispose();
-      return circleImage;
-   }
-
-   public static void createImage(String message, String name, String id, InputStream background, String userImage, File image, String token) throws IOException {
+   public static void createImage(String message, String name, String id, InputStream background, String userImage, File imageFile, String token) throws IOException {
       try {
          int width = 1000;
          int height = 500;
-         BufferedImage userPic = null;
 
+         ImmutableImage backgroundImg = ImmutableImage.loader().fromStream(background).scaleTo(width, height);
+         
+         ImmutableImage userAvatar = null;
          try {
             InputStream userPicStream = imageFromUrl(userImage, token);
-            userPic = ImageIO.read(userPicStream);
-            userPicStream.close();
-         } catch (IIOException var16) {
-            log.error("Exception", var16);
+            if (userPicStream != null) {
+                userAvatar = ImmutableImage.loader().fromStream(userPicStream);
+                userPicStream.close();
+            }
+         } catch (Exception var16) {
+            log.error("Error loading user avatar", var16);
          }
 
-         if (userPic != null) {
-            userPic = createAvatar(userPic);
-         }
-
-         BufferedImage background2 = ImageIO.read(background);
-         BufferedImage bi = new BufferedImage(width, height, 2);
-         Graphics2D ig2 = bi.createGraphics();
-         ig2.drawImage(background2, 0, 0, width, height, null);
-         if (userPic != null) {
-            ig2.drawImage(userPic, 370, 25, null);
+         if (userAvatar != null) {
+            userAvatar = createAvatar(userAvatar);
          }
 
          InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream("trans.ttf");
@@ -355,63 +300,61 @@ public class OtherUtil {
             return;
          }
 
-         Font font2 = Font.createFont(0, is).deriveFont(90.0F);
+         Font font2 = Font.createFont(Font.TRUETYPE_FONT, is).deriveFont(90.0F);
          Font font1 = font2.deriveFont(70.0F);
-         ig2.setFont(font1);
-         drawOutlinedAndCenteredString(message, width, height, ig2, 370);
-         ig2.setFont(font2);
-         ig2.setPaint(Color.white);
-         drawOutlinedAndCenteredString(name, width, height, ig2, 470);
-         ig2.dispose();
-         ImageIO.write(bi, "png", image);
+
+         if (userAvatar != null) {
+            backgroundImg = backgroundImg.overlay(userAvatar, 370, 25);
+         }
+
+         BufferedImage awtImg = backgroundImg.awt();
+         Graphics2D g2d = awtImg.createGraphics();
+         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+         g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+
+         // Draw message (outlined and centered)
+         drawOutlinedAndCenteredString(g2d, message, font1, 370, width);
+         
+         // Draw name (outlined and centered)
+         drawOutlinedAndCenteredString(g2d, name, font2, 470, width);
+
+         g2d.dispose();
+
+         ImmutableImage.fromAwt(awtImg).output(PngWriter.NoCompression, imageFile);
+
       } catch (FontFormatException var17) {
-         var17.printStackTrace();
+         log.error("Font error", var17);
       }
    }
 
-   private static void drawOutlinedAndCenteredString(String s, int w, int h, @NotNull Graphics2D g, int fh) {
-      FontMetrics fm = g.getFontMetrics();
-      int x = (w - fm.stringWidth(s)) / 2;
-      int y = fm.getAscent() + (h - (fm.getAscent() + fm.getDescent())) / 2;
-      y = fh == 0 ? y : fh;
-      g.setColor(Color.black);
-      g.drawString(s, x + 10, y);
-      g.drawString(s, x - 10, y);
-      g.drawString(s, x, y + 10);
-      g.drawString(s, x, y - 10);
-      g.setColor(Color.white);
-      g.drawString(s, x, fh == 0 ? y : fh);
+   private static void drawOutlinedAndCenteredString(Graphics2D g2d, String text, Font font, int y, int width) {
+      g2d.setFont(font);
+      int textWidth = g2d.getFontMetrics().stringWidth(text);
+      int x = (width - textWidth) / 2;
+
+      Color outlineColor = new Color(0, 0, 0);
+      Color textColor = new Color(255, 255, 255);
+      
+      g2d.setColor(outlineColor);
+      g2d.drawString(text, x + 10, y);
+      g2d.drawString(text, x - 10, y);
+      g2d.drawString(text, x, y + 10);
+      g2d.drawString(text, x, y - 10);
+      
+      g2d.setColor(textColor);
+      g2d.drawString(text, x, y);
    }
 
-   private static void drawCenteredString(String s, int w, int h, Graphics2D g, int fw, int fh, Color color) {
-      FontMetrics fm = g.getFontMetrics();
-      int x = (w - fm.stringWidth(s)) / 2;
-      int y = fm.getAscent() + (h - (fm.getAscent() + fm.getDescent())) / 2;
-      g.setColor(color);
-      g.drawString(s, fw == 0 ? x : fw, fh == 0 ? y : fh);
-   }
-
-   private static BufferedImage createAvatar(BufferedImage image) {
-      int w = image.getWidth();
-      int h = image.getHeight();
-      BufferedImage output = new BufferedImage(w + 10, h + 10, 2);
+   private static ImmutableImage createAvatar(ImmutableImage image) {
+      int size = 300;
+      ImmutableImage scaled = image.scaleTo(size, size).cover(size, size);
+      BufferedImage output = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
       Graphics2D g2 = output.createGraphics();
-      g2.setComposite(AlphaComposite.Src);
       g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-      g2.setColor(Color.WHITE);
-      g2.fill(new Float(0.0F, 0.0F, w, h));
-      g2.setComposite(AlphaComposite.SrcAtop);
-      g2.drawImage(image, 0, 0, null);
-      g2.setColor(Color.WHITE);
-      g2.setStroke(new BasicStroke(10.0F));
-      g2.drawOval(0, 0, w, h);
+      g2.setClip(new RoundRectangle2D.Float(0, 0, size, size, size, size));
+      g2.drawImage(scaled.awt(), 0, 0, null);
       g2.dispose();
-      Image tmp = output.getScaledInstance(300, 300, 4);
-      output = new BufferedImage(300, 300, 2);
-      g2 = output.createGraphics();
-      g2.drawImage(tmp, 0, 0, null);
-      g2.dispose();
-      return output;
+      return ImmutableImage.fromAwt(output);
    }
 
    private static String getFileChecksum(MessageDigest digest, File file) throws IOException {

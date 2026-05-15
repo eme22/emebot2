@@ -1,21 +1,14 @@
 package com.eme22.bolo.gui;
 
 import com.eme22.bolo.Bot;
-import jakarta.annotation.PostConstruct;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import javax.swing.JFrame;
 import javax.swing.JTabbedPane;
-import io.quarkus.arc.profile.IfBuildProfile;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
-
-@ApplicationScoped
 public class GUI extends JFrame {
    private final ConsolePanel console;
    private final Bot bot;
 
-   @Inject
    public GUI(Bot bot) {
       this.bot = bot;
       this.console = new ConsolePanel();
@@ -24,7 +17,6 @@ public class GUI extends JFrame {
    public static void setupHeadlessMode() {
    }
 
-   @PostConstruct
    public void init() {
       this.setDefaultCloseOperation(3);
       this.setTitle("Sentinel");
@@ -34,7 +26,7 @@ public class GUI extends JFrame {
       this.pack();
       this.setLocationRelativeTo(null);
       this.setVisible(true);
-      this.bot.setGUI(this);
+      //this.bot.setGUI(this);
       this.addWindowListener(new WindowListener() {
          @Override
          public void windowOpened(WindowEvent e) {

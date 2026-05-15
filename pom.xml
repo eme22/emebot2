@@ -37,11 +37,6 @@
             <name>m2-duncte123</name>
             <url>https://m2.duncte123.dev/releases</url>
         </repository>
-        <repository>
-            <id>arbjergDev-snapshots</id>
-            <name>Lavalink Repository</name>
-            <url>https://maven.lavalink.dev/snapshots</url>
-        </repository>
     </repositories>
 
     <dependencyManagement>
@@ -219,7 +214,7 @@
         <dependency>
             <groupId>com.github.eme22</groupId>
             <artifactId>discord-cdn-java</artifactId>
-            <version>-SNAPSHOT</version>
+            <version>master-SNAPSHOT</version>
         </dependency>
 
         <!-- Javascript -->
@@ -249,6 +244,11 @@
             <groupId>org.jetbrains.kotlin</groupId>
             <artifactId>kotlin-reflect</artifactId>
             <version>${kotlin.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.sksamuel.scrimage</groupId>
+            <artifactId>scrimage-core</artifactId>
+            <version>4.3.0</version>
         </dependency>
 
     </dependencies>

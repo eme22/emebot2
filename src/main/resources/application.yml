@@ -1,13 +1,15 @@
 quarkus:
   native:
     resources:
-      includes: "messages*.properties"
-    additional-build-args: "-Dlog4j2.disable.jmx=true,-H:IncludeResourceBundles=messages,--initialize-at-run-time=com.neovisionaries.ws.client.Misc\\,net.dv8tion.jda.internal.audio.CryptoAdapter$AbstractAaedAdapter\\,net.dv8tion.jda.internal.requests.restaction.MessageCreateActionImpl\\,org.apache.http.impl.auth.NTLMEngineImpl\\,com.eme22.bolo.nsfw.NSFWStrings\\,sun.java2d.Disposer\\,sun.font.SunFontManager\\,sun.font.TrueTypeFont\\,sun.font.FontDesignMetrics\\,java.awt.Toolkit\\,java.awt.Component\\,io.smallrye.common.ref.References"
+      includes: "messages*.properties,trans.ttf,images/*.png"
+    additional-build-args: "-Dlog4j2.disable.jmx=true,-H:IncludeResourceBundles=messages,--initialize-at-run-time=com.neovisionaries.ws.client.Misc\\,net.dv8tion.jda.internal.audio.CryptoAdapter$AbstractAaedAdapter\\,net.dv8tion.jda.internal.requests.restaction.MessageCreateActionImpl\\,org.apache.http.impl.auth.NTLMEngineImpl\\,com.eme22.bolo.nsfw.NSFWStrings\\,io.smallrye.common.ref.References"
   http:
     port: 8081
 
 jda:
-  token: ${JDA_TOKEN}
+  token: DISCORD_TOKEN_PLACEHOLDER
+  shardId: ${JDA_SHARD_ID:0}
+  totalShards: ${JDA_TOTAL_SHARDS:1}
 
 config:
   prefix: "@mention"
@@ -33,7 +35,7 @@ config:
   discordChannel: "https://discord.gg/Wt4U4D5GkF"
   nogui-title: "EMBot"
   nogui-message: "Switching to nogui mode. You can manually start in nogui mode by including the -Dnogui=true flag."
-  clientToken: ${CLIENT_TOKEN}
+  clientToken: CLIENT_TOKEN_PLACEHOLDER
   aliases:
     sendmessageas: [ "sendmessageasuser" ]
     settingTEST: [ "status" ]
@@ -140,46 +142,48 @@ lavalink:
 
 "%dev":
   jda:
-    token: ${DEV_JDA_TOKEN}
+    token: "DISCORD_TOKEN_PLACEHOLDER"
   lavalink:
     servers:
       - name: DevNode
         host: 10.241.251.82
         port: 2333
-        password: ${DEV_LAVALINK_PASSWORD}
+        password: LAVALINK_PASSWORD_PLACEHOLDER
         region: peru
         secure: false
         timeout: 10000
   quarkus:
     datasource:
       db-kind: mariadb
-      username: ${DEV_DB_USER}
-      password: ${DEV_DB_PASS}
+      username: u15_qmC7fYGOKC
+      password: "DB_PASSWORD_PLACEHOLDER"
       jdbc:
         url: jdbc:mariadb://10.241.251.82:3306/s15_mbot
     hibernate-orm:
       database:
         generation: update
-      enable-lazy-load-no-trans: true
+      unsupported-properties:
+        "hibernate.enable_lazy_load_no_trans": true
 
 "%prod":
   quarkus:
     datasource:
       db-kind: mariadb
-      username: ${DB_USER:mbot}
-      password: ${DB_PASS:mbot}
+      username: u15_qmC7fYGOKC
+      password: "DB_PASSWORD_PLACEHOLDER"
       jdbc:
-        url: jdbc:mariadb://192.168.18.164:3306/${DB_NAME:mbot}
+        url: jdbc:mariadb://192.168.18.164:3306/s15_mbot
     hibernate-orm:
       database:
         generation: update
-      enable-lazy-load-no-trans: true
+      unsupported-properties:
+        "hibernate.enable_lazy_load_no_trans": true
   lavalink:
     servers:
       - name: ProdNode
         host: 192.168.18.164
         port: 2333
-        password: ${LAVALINK_PASSWORD}
+        password: LAVALINK_PASSWORD_PLACEHOLDER
         region: peru
         secure: false
         timeout: 10000

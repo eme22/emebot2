@@ -15,7 +15,6 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
-import java.awt.Color;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,16 +22,15 @@ import java.util.Optional;
 public class StatsCmd extends BaseCommand {
 
    private final StatsService statsService;
-   private final Color color;
+   private final int color = 0x00CCCC;
    private final Bot bot;
 
    @Inject
-   public StatsCmd(Bot bot, StatsService statsService, Color color, @ConfigProperty(name = "config.aliases.stats", defaultValue = "estadisticas") String[] aliases) {
+   public StatsCmd(Bot bot, StatsService statsService, @ConfigProperty(name = "config.aliases.stats", defaultValue = "estadisticas") String[] aliases) {
       this.name = "stats";
       this.help = "muestra las estadisticas del bot y del servidor";
       this.aliases = aliases;
       this.statsService = statsService;
-      this.color = color;
       this.bot = bot;
    }
 
