@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.admin;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.inject.Named;
 
 import com.eme22.bolo.commands.AdminCommand;
@@ -15,6 +17,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class SetGoodByeEnabledCmd extends AdminCommand {
    @ConfigProperty(name = "config.aliases.setgoodbyeenabled", defaultValue = "")
    String[] aliases = new String[0];
@@ -27,7 +31,7 @@ public class SetGoodByeEnabledCmd extends AdminCommand {
       this.arguments = "<true - false>";
    }
 
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       OptionMapping canal = event.getOption("estado");
       Server s = (Server)event.getClient().getSettingsFor(event.getGuild());
       if (canal != null && canal.getAsBoolean()) {
@@ -41,7 +45,7 @@ public class SetGoodByeEnabledCmd extends AdminCommand {
       s.persist();
    }
 
-   protected void execute(CommandEvent event) {
+   public void execute(CommandEvent event) {
       String estado = event.getArgs();
       Server s = (Server)event.getClient().getSettingsFor(event.getGuild());
       if (estado.equals("true")) {
@@ -63,6 +67,14 @@ public class SetGoodByeEnabledCmd extends AdminCommand {
       }
    }
 }
+
+
+
+
+
+
+
+
 
 
 

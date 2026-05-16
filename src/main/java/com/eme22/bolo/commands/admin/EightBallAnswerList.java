@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.admin;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.inject.Named;
 
 import com.eme22.bolo.Bot;
@@ -16,6 +18,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class EightBallAnswerList extends AdminCommand {
    private final Builder builder;
 
@@ -34,7 +38,7 @@ public class EightBallAnswerList extends AdminCommand {
          .setTimeout(10L, TimeUnit.MINUTES);
    }
 
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       Server s = (Server)event.getClient().getSettingsFor(event.getGuild());
       List<String> data = s.getEightBallAnswers();
       if (data.isEmpty()) {
@@ -46,7 +50,7 @@ public class EightBallAnswerList extends AdminCommand {
       }
    }
 
-   protected void execute(CommandEvent event) {
+   public void execute(CommandEvent event) {
       Server s = (Server)event.getClient().getSettingsFor(event.getGuild());
       List<String> data = s.getEightBallAnswers();
       if (data.isEmpty()) {
@@ -58,6 +62,14 @@ public class EightBallAnswerList extends AdminCommand {
       }
    }
 }
+
+
+
+
+
+
+
+
 
 
 

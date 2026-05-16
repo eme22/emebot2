@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.general;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import com.eme22.bolo.Bot;
 import com.eme22.bolo.commands.BaseCommand;
 import com.eme22.bolo.model.Server;
@@ -14,6 +16,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class EightBallCmd extends BaseCommand {
    @ConfigProperty(name = "config.aliases.8ball", defaultValue = "")
    String[] aliases = new String[0];
@@ -26,7 +30,7 @@ public class EightBallCmd extends BaseCommand {
       this.options = Collections.singletonList(new OptionData(OptionType.STRING, "pregunta", "pregunta que vas a realizar").setRequired(true));
    }
 
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       Server settings = (Server)event.getClient().getSettingsFor(event.getGuild());
       String question = event.getOption("pregunta").getAsString();
       if (question.trim().isEmpty()) {
@@ -39,7 +43,7 @@ public class EightBallCmd extends BaseCommand {
       }
    }
 
-   protected void execute(CommandEvent event) {
+   public void execute(CommandEvent event) {
       Server settings = (Server)event.getClient().getSettingsFor(event.getGuild());
       String question = event.getArgs();
       if (question.trim().isEmpty()) {
@@ -52,5 +56,13 @@ public class EightBallCmd extends BaseCommand {
       }
    }
 }
+
+
+
+
+
+
+
+
 
 

@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.admin;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.inject.Named;
 
 import com.eme22.bolo.Bot;
@@ -22,6 +24,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class RemoveChannelToLinkEnhancerCmd extends AdminCommand {
    private final Bot bot;
    @ConfigProperty(name = "config.aliases.removechanneltolinkenhancer", defaultValue = "")
@@ -59,7 +63,7 @@ public class RemoveChannelToLinkEnhancerCmd extends AdminCommand {
       this.guildOnly = true;
    }
 
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       Server s = this.bot.getSettingsManager().getSettings(event.getGuild());
       LanguageService lang = this.bot.getSettingsManager().getLanguageService(event.getGuild());
       GuildChannelUnion channel = event.getOption("channel").getAsChannel();
@@ -73,7 +77,7 @@ public class RemoveChannelToLinkEnhancerCmd extends AdminCommand {
       }
    }
 
-   protected void execute(CommandEvent event) {
+   public void execute(CommandEvent event) {
       Server s = this.bot.getSettingsManager().getSettings(event.getGuild());
       LanguageService lang = this.bot.getSettingsManager().getLanguageService(event.getGuild());
       if (event.getArgs().isEmpty()) {
@@ -91,6 +95,14 @@ public class RemoveChannelToLinkEnhancerCmd extends AdminCommand {
       }
    }
 }
+
+
+
+
+
+
+
+
 
 
 

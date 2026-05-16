@@ -107,6 +107,9 @@ public class OtherUtil {
    private static String goodByeString = ConfigProvider.getConfig().getValue("config.goodbye", String.class);
 
    public static Path getPath(String path) {
+      if (path == null) {
+          return null;
+      }
       Path result = Paths.get(path);
       if (result.toAbsolutePath().toString().toLowerCase().startsWith("c:\\windows\\system32\\")) {
          try {
@@ -136,20 +139,31 @@ public class OtherUtil {
    }
 
    public static InputStream imageFromUrl(String url, String token) {
-      if (url == null) {
+      if (url == null || url.trim().isEmpty()) {
+         log.warn("imageFromUrl: URL is null or empty");
          return null;
       } else {
          try {
-            URL u = java.net.URI.create(url).toURL();
+            log.info("imageFromUrl: Fetching image from URL: {}", url);
+            java.net.URI uri = java.net.URI.create(url);
+            if (!uri.isAbsolute()) {
+               log.warn("imageFromUrl: URL is not absolute: {}", url);
+               return null;
+            }
+            URL u = uri.toURL();
             HttpURLConnection urlConnection = (HttpURLConnection)u.openConnection();
             urlConnection.setRequestProperty(
                "user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.112 Safari/537.36"
             );
             int responseCode = urlConnection.getResponseCode();
-            return responseCode == 404 && url.contains("cdn.discordapp.com")
-               ? imageFromUrl(((RefreshedUrl)new Discord(token).fetchLatestLink(url).getRefreshedUrls().get(0)).getRefreshed(), token)
-               : urlConnection.getInputStream();
+            log.info("imageFromUrl: Response code: {}", responseCode);
+            if (responseCode == 404 && url.contains("cdn.discordapp.com")) {
+               log.info("imageFromUrl: 404 from Discord CDN, attempting to refresh link");
+               return imageFromUrl(((RefreshedUrl)new Discord(token).fetchLatestLink(url).getRefreshedUrls().get(0)).getRefreshed(), token);
+            }
+            return urlConnection.getInputStream();
          } catch (IllegalArgumentException | IOException var5) {
+            log.error("imageFromUrl: Error fetching image: " + var5.getMessage(), var5);
             return null;
          }
       }
@@ -277,36 +291,54 @@ public class OtherUtil {
          int width = 1000;
          int height = 500;
 
-         ImmutableImage backgroundImg = ImmutableImage.loader().fromStream(background).scaleTo(width, height);
+         log.info("createImage: Loading background image");
+         ImmutableImage backgroundImg;
+         if (background != null) {
+             backgroundImg = ImmutableImage.loader().fromStream(background).scaleTo(width, height);
+             background.close();
+         } else {
+             log.info("createImage: No background provided, using black background");
+             backgroundImg = ImmutableImage.filled(width, height, java.awt.Color.BLACK);
+         }
          
          ImmutableImage userAvatar = null;
          try {
+            log.info("createImage: Loading user avatar from: {}", userImage);
             InputStream userPicStream = imageFromUrl(userImage, token);
             if (userPicStream != null) {
                 userAvatar = ImmutableImage.loader().fromStream(userPicStream);
                 userPicStream.close();
+                log.info("createImage: User avatar loaded successfully");
+            } else {
+                log.warn("createImage: User avatar stream is null");
             }
          } catch (Exception var16) {
-            log.error("Error loading user avatar", var16);
+            log.error("createImage: Error loading user avatar", var16);
          }
 
          if (userAvatar != null) {
             userAvatar = createAvatar(userAvatar);
+            log.info("createImage: Avatar processed (rounded)");
          }
 
+         log.info("createImage: Loading font trans.ttf");
          InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream("trans.ttf");
+         Font font2;
          if (is == null) {
-            log.error("No hay una fuente ttf configurada!!!");
-            return;
+            log.warn("createImage: No hay una fuente ttf configurada (trans.ttf not found in resources). Usando fuente del sistema.");
+            font2 = new Font("SansSerif", Font.BOLD, 90);
+         } else {
+            font2 = Font.createFont(Font.TRUETYPE_FONT, is).deriveFont(90.0F);
+            log.info("createImage: Font loaded successfully from resources");
          }
-
-         Font font2 = Font.createFont(Font.TRUETYPE_FONT, is).deriveFont(90.0F);
          Font font1 = font2.deriveFont(70.0F);
 
          if (userAvatar != null) {
             backgroundImg = backgroundImg.overlay(userAvatar, 370, 25);
+            log.info("createImage: Avatar overlaid on background");
          }
 
+         log.info("createImage: Drawing text overlays");
          BufferedImage awtImg = backgroundImg.awt();
          Graphics2D g2d = awtImg.createGraphics();
          g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -320,10 +352,14 @@ public class OtherUtil {
 
          g2d.dispose();
 
+         log.info("createImage: Saving final image to: {}", imageFile.getAbsolutePath());
          ImmutableImage.fromAwt(awtImg).output(PngWriter.NoCompression, imageFile);
+         log.info("createImage: Image saved successfully");
 
       } catch (FontFormatException var17) {
-         log.error("Font error", var17);
+         log.error("createImage: Font error", var17);
+      } catch (Exception var18) {
+         log.error("createImage: Unexpected error: " + var18.getMessage(), var18);
       }
    }
 
@@ -529,18 +565,20 @@ public class OtherUtil {
    public static InputStream getBackground(Server settingsTEST, boolean b, String token) {
       if (b) {
          String image = settingsTEST.getBienvenidasChannelImage();
-         if (image == null) {
-            ClassLoader classloader = Thread.currentThread().getContextClassLoader();
-            return classloader.getResourceAsStream("images/bienvenida.png");
+         if (image == null || image.trim().isEmpty()) {
+            log.info("getBackground: No custom welcome image, using default black background");
+            return null;
          } else {
+            log.info("getBackground: Using custom welcome image from URL: {}", image);
             return imageFromUrl(image, token);
          }
       } else {
          String image = settingsTEST.getDespedidasChannelImage();
-         if (image == null) {
-            ClassLoader classloader = Thread.currentThread().getContextClassLoader();
-            return classloader.getResourceAsStream("images/despedida.png");
+         if (image == null || image.trim().isEmpty()) {
+            log.info("getBackground: No custom farewell image, using default black background");
+            return null;
          } else {
+            log.info("getBackground: Using custom farewell image from URL: {}", image);
             return imageFromUrl(image, token);
          }
       }

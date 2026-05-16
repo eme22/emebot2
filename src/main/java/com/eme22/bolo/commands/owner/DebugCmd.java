@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.owner;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import com.eme22.bolo.Bot;
 import com.eme22.bolo.commands.OwnerCommand;
 import com.jagrosh.jdautilities.command.CommandEvent;
@@ -14,6 +16,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class DebugCmd extends OwnerCommand {
    private static final String[] PROPERTIES = new String[]{
       "java.version",
@@ -56,7 +60,7 @@ public class DebugCmd extends OwnerCommand {
       this.guildOnly = false;
    }
 
-   protected void execute(CommandEvent event) {
+   public void execute(CommandEvent event) {
       String sb = this.getDebugMessage(event.getJDA());
       if (!event.isFromType(ChannelType.PRIVATE)
          && !event.getSelfMember().hasPermission(event.getTextChannel(), new Permission[]{Permission.MESSAGE_ATTACH_FILES})) {
@@ -66,7 +70,7 @@ public class DebugCmd extends OwnerCommand {
       }
    }
 
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       event.reply("Debug Information: " + this.getDebugMessage(event.getJDA())).queue();
    }
 
@@ -120,6 +124,14 @@ public class DebugCmd extends OwnerCommand {
       return sb.toString();
    }
 }
+
+
+
+
+
+
+
+
 
 
 

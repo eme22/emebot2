@@ -1,5 +1,8 @@
 package com.eme22.bolo.commands.general.nsfw;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
+
 import com.eme22.bolo.commands.general.ActionsCmd;
 import com.eme22.bolo.nsfw.NSFWStrings;
 import com.eme22.bolo.stats.StatsService;
@@ -13,6 +16,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class AnalCmd extends ActionsCmd {
    @ConfigProperty(name = "config.aliases.anal", defaultValue = "")
    String[] aliases = new String[0];
@@ -53,5 +58,10 @@ public class AnalCmd extends ActionsCmd {
       return animeImageClient.getImage(HM_NSFW.ANAL);
    }
 }
+
+
+
+
+
 
 

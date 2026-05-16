@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.owner;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import com.eme22.bolo.Bot;
 import com.eme22.bolo.commands.OwnerCommand;
 import com.eme22.bolo.playlist.PlaylistLoader;
@@ -17,6 +19,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class PlaylistCmd extends OwnerCommand {
    private final Bot bot;
    @ConfigProperty(name = "config.aliases.playlist", defaultValue = "")
@@ -37,7 +41,7 @@ public class PlaylistCmd extends OwnerCommand {
       };
    }
 
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       StringBuilder builder = new StringBuilder(event.getClient().getWarning() + " Playlist Management Commands:\n");
 
       for (Command cmd : this.children) {
@@ -72,8 +76,7 @@ public class PlaylistCmd extends OwnerCommand {
 
       event.reply(builder.toString());
    }
-
-   public class AppendlistCmd extends OwnerCommand {
+public class AppendlistCmd extends OwnerCommand {
       public AppendlistCmd() {
          this.name = "append";
          this.aliases = new String[]{"add"};
@@ -90,7 +93,7 @@ public class PlaylistCmd extends OwnerCommand {
          );
       }
 
-      protected void execute(SlashCommandEvent event) {
+      public void execute(SlashCommandEvent event) {
          String pname = (String)event.getOption("name", OptionMapping::getAsString);
          String[] parts = event.getOptionsByName("url").stream().map(OptionMapping::getAsString).toArray(String[]::new);
          StringBuilder builder = new StringBuilder();
@@ -107,7 +110,7 @@ public class PlaylistCmd extends OwnerCommand {
          }
       }
 
-      protected void execute(CommandEvent event) {
+      public void execute(CommandEvent event) {
          String[] parts = event.getArgs().split("\\s+", 2);
          if (parts.length < 2) {
             event.reply(event.getClient().getError() + " Please include a playlist name and URLs to add!");
@@ -140,8 +143,7 @@ public class PlaylistCmd extends OwnerCommand {
          }
       }
    }
-
-   public class DefaultlistCmd extends AutoplaylistCmd {
+public class DefaultlistCmd extends AutoplaylistCmd {
       public DefaultlistCmd(Bot bot) {
          super(bot);
          this.name = "setdefault";
@@ -150,8 +152,7 @@ public class PlaylistCmd extends OwnerCommand {
          this.guildOnly = true;
       }
    }
-
-   public class DeletelistCmd extends OwnerCommand {
+public class DeletelistCmd extends OwnerCommand {
       public DeletelistCmd() {
          this.name = "delete";
          this.aliases = new String[]{"remove"};
@@ -161,7 +162,7 @@ public class PlaylistCmd extends OwnerCommand {
          this.options = Collections.singletonList(new OptionData(OptionType.STRING, "name", "Playlist name").setRequired(true));
       }
 
-      protected void execute(SlashCommandEvent event) {
+      public void execute(SlashCommandEvent event) {
          String pname = (String)event.getOption("name", OptionMapping::getAsString);
          if (PlaylistCmd.this.bot.getPlaylistLoader().getPlaylist(pname) == null) {
             event.reply(event.getClient().getError() + " Playlist `" + pname + "` doesn't exist!").queue();
@@ -175,7 +176,7 @@ public class PlaylistCmd extends OwnerCommand {
          }
       }
 
-      protected void execute(CommandEvent event) {
+      public void execute(CommandEvent event) {
          String pname = event.getArgs().replaceAll("\\s+", "_");
          if (PlaylistCmd.this.bot.getPlaylistLoader().getPlaylist(pname) == null) {
             event.reply(event.getClient().getError() + " Playlist `" + pname + "` doesn't exist!");
@@ -189,8 +190,7 @@ public class PlaylistCmd extends OwnerCommand {
          }
       }
    }
-
-   public class ListCmd extends OwnerCommand {
+public class ListCmd extends OwnerCommand {
       public ListCmd() {
          this.name = "all";
          this.aliases = new String[]{"available", "list"};
@@ -198,7 +198,7 @@ public class PlaylistCmd extends OwnerCommand {
          this.guildOnly = true;
       }
 
-      protected void execute(SlashCommandEvent event) {
+      public void execute(SlashCommandEvent event) {
          if (!PlaylistCmd.this.bot.getPlaylistLoader().folderExists()) {
             PlaylistCmd.this.bot.getPlaylistLoader().createFolder();
          }
@@ -219,7 +219,7 @@ public class PlaylistCmd extends OwnerCommand {
          }
       }
 
-      protected void execute(CommandEvent event) {
+      public void execute(CommandEvent event) {
          if (!PlaylistCmd.this.bot.getPlaylistLoader().folderExists()) {
             PlaylistCmd.this.bot.getPlaylistLoader().createFolder();
          }
@@ -240,8 +240,7 @@ public class PlaylistCmd extends OwnerCommand {
          }
       }
    }
-
-   public class MakelistCmd extends OwnerCommand {
+public class MakelistCmd extends OwnerCommand {
       public MakelistCmd() {
          this.name = "make";
          this.aliases = new String[]{"create"};
@@ -251,7 +250,7 @@ public class PlaylistCmd extends OwnerCommand {
          this.options = Collections.singletonList(new OptionData(OptionType.STRING, "name", "Playlist name").setRequired(true));
       }
 
-      protected void execute(SlashCommandEvent event) {
+      public void execute(SlashCommandEvent event) {
          String pname = (String)event.getOption("name", OptionMapping::getAsString);
          if (PlaylistCmd.this.bot.getPlaylistLoader().getPlaylist(pname) == null) {
             try {
@@ -265,7 +264,7 @@ public class PlaylistCmd extends OwnerCommand {
          }
       }
 
-      protected void execute(CommandEvent event) {
+      public void execute(CommandEvent event) {
          String pname = event.getArgs().replaceAll("\\s+", "_");
          if (PlaylistCmd.this.bot.getPlaylistLoader().getPlaylist(pname) == null) {
             try {
@@ -280,5 +279,14 @@ public class PlaylistCmd extends OwnerCommand {
       }
    }
 }
+
+
+
+
+
+
+
+
+
 
 

@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.owner;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import com.eme22.bolo.Bot;
 import com.eme22.bolo.commands.OwnerCommand;
 import com.jagrosh.jdautilities.command.CommandEvent;
@@ -8,6 +10,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class ShutdownCmd extends OwnerCommand {
    @ConfigProperty(name = "config.aliases.shutdown", defaultValue = "")
    String[] aliases = new String[0];
@@ -20,15 +24,23 @@ public class ShutdownCmd extends OwnerCommand {
       this.guildOnly = false;
    }
 
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       event.reply(event.getClient().getWarning() + " Apagando...").queue();
       this.bot.shutdown();
    }
 
-   protected void execute(CommandEvent event) {
+   public void execute(CommandEvent event) {
       event.replyWarning(" Apagando...");
       this.bot.shutdown();
    }
 }
+
+
+
+
+
+
+
+
 
 

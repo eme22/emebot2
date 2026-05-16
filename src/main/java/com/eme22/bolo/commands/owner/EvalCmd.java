@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.owner;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import com.eme22.bolo.Bot;
 import com.eme22.bolo.commands.OwnerCommand;
 import com.jagrosh.jdautilities.command.CommandEvent;
@@ -21,6 +23,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class EvalCmd extends OwnerCommand {
    private final Bot bot;
    private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
@@ -35,7 +39,7 @@ public class EvalCmd extends OwnerCommand {
       this.options = Collections.singletonList(new OptionData(OptionType.STRING, "code", "Eval Code").setRequired(true));
    }
 
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       long startTime = System.currentTimeMillis();
       ScheduledFuture<?> scheduleCancel = scheduler.schedule(cancelDeferred(event), 17L, TimeUnit.SECONDS);
       ScheduledFuture<?> schedule = scheduler.schedule(generateTimerTask(event), 3L, TimeUnit.SECONDS);
@@ -83,7 +87,7 @@ public class EvalCmd extends OwnerCommand {
       };
    }
 
-   protected void execute(CommandEvent event) {
+   public void execute(CommandEvent event) {
       String command = event.getArgs();
       ScriptEngine se = this.setupDefaultEngine(event);
 
@@ -115,5 +119,13 @@ public class EvalCmd extends OwnerCommand {
       return se;
    }
 }
+
+
+
+
+
+
+
+
 
 

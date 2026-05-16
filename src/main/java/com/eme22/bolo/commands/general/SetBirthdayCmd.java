@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.general;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import com.eme22.bolo.Bot;
 import com.eme22.bolo.commands.BaseCommand;
 import com.eme22.bolo.model.Birthday;
@@ -15,6 +17,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class SetBirthdayCmd extends BaseCommand {
    Bot bot;
    @ConfigProperty(name = "config.aliases.setbirthday", defaultValue = "")
@@ -32,7 +36,7 @@ public class SetBirthdayCmd extends BaseCommand {
       );
    }
 
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       try {
          int dia = Integer.parseInt(event.getOption("dia").getAsString());
          int mes = Integer.parseInt(event.getOption("mes").getAsString());
@@ -60,7 +64,7 @@ public class SetBirthdayCmd extends BaseCommand {
       }
    }
 
-   protected void execute(CommandEvent event) {
+   public void execute(CommandEvent event) {
       try {
          String[] args = event.getArgs().split(" ");
          Server settings = this.bot.getSettingsManager().getSettings(event.getGuild());
@@ -89,5 +93,13 @@ public class SetBirthdayCmd extends BaseCommand {
       }
    }
 }
+
+
+
+
+
+
+
+
 
 

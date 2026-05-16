@@ -19,10 +19,9 @@ import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.enterprise.context.control.ActivateRequestContext;
 
-import io.quarkus.runtime.annotations.RegisterForReflection;
+
 
 @ApplicationScoped
-@RegisterForReflection(methods = true)
 @Slf4j
 public class LinkEnhancerListener extends ListenerAdapter {
    

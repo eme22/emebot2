@@ -1,6 +1,7 @@
 package com.eme22.bolo.commands.general;
 
-import lombok.extern.slf4j.Slf4j;
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 
 import com.eme22.bolo.commands.BaseCommand;
 import com.eme22.bolo.stats.StatsService;
@@ -21,8 +22,10 @@ import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.interactions.InteractionHook;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
-
+import lombok.extern.slf4j.Slf4j;
 @Slf4j
+@Transactional
+@ActivateRequestContext
 public abstract class ActionsCmd extends BaseCommand {
    @Generated
    
@@ -62,7 +65,7 @@ public abstract class ActionsCmd extends BaseCommand {
 
    protected abstract String loadActionImageUrl3(AnimeImageClient animeImageClient) throws IOException, URISyntaxException, InterruptedException;
 
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       Member memberKisser = event.getMember();
       Member memberKissed = event.getOption("usuario").getAsMember();
       if (memberKissed.getUser().isBot()) {
@@ -75,19 +78,22 @@ public abstract class ActionsCmd extends BaseCommand {
          builder.setImage(this.getRandomImage());
          event.replyEmbeds(builder.build(), new MessageEmbed[0]).queue(this.success);
       }
+
    }
 
-   protected void execute(CommandEvent event) {
+   public void execute(CommandEvent event) {
       if (event.getArgs().isEmpty()) {
-         event.replyError("Por favor incluya un nombre");
+         event.replyError(" Debe nombrar a un usuario");
       } else {
-         List<Member> member = FinderUtil.findMembers(event.getArgs(), event.getGuild());
-         if (member.isEmpty()) {
-            event.replyError("Asegurese de que el usuario exista y no sea un bot");
+         List<Member> list = FinderUtil.findMembers(event.getArgs(), event.getGuild());
+         if (list.isEmpty()) {
+            event.replyError(" No se ha podido encontrar a ese usuario");
          } else {
             Member memberKisser = event.getMember();
-            Member memberKissed = member.get(0);
-            if (memberKisser.equals(memberKissed)) {
+            Member memberKissed = (Member)list.get(0);
+            if (memberKissed.getUser().isBot()) {
+               event.replyError("Asegurese de que el usuario no sea un bot");
+            } else if (memberKisser.equals(memberKissed)) {
                event.replyError("Asegurese de que el usuario no sea usted");
             } else {
                EmbedBuilder builder = new EmbedBuilder();
@@ -118,7 +124,7 @@ public abstract class ActionsCmd extends BaseCommand {
       }
    }
 
-   public class Consumer<T> implements java.util.function.Consumer<T> {
+   protected class Consumer<T> implements java.util.function.Consumer<T> {
       @Override
       public void accept(T success) {
          if (success instanceof Message) {
@@ -133,17 +139,20 @@ public abstract class ActionsCmd extends BaseCommand {
       }
    }
 
-   private void updateActionStat(long guildId) {
-       switch(this.name.toLowerCase()) {
-           case "kiss": this.statsService.updateKisses(guildId); break;
-           case "slap": this.statsService.updateSlaps(guildId); break;
-           case "poke": this.statsService.updatePokes(guildId); break;
-           case "bite": this.statsService.updateBites(guildId); break;
-           case "lick": this.statsService.updateLicks(guildId); break;
-           case "fuck": this.statsService.updateFucks(guildId); break;
-           case "cum": this.statsService.updateCums(guildId); break;
-           case "anal": this.statsService.updateAnals(guildId); break;
-       }
+   protected void updateActionStat(long guildId) {
+        switch(this.name.toLowerCase()) {
+            case "kiss": this.statsService.updateKisses(guildId); break;
+            case "slap": this.statsService.updateSlaps(guildId); break;
+            case "poke": this.statsService.updatePokes(guildId); break;
+            case "bite": this.statsService.updateBites(guildId); break;
+            case "lick": this.statsService.updateLicks(guildId); break;
+            case "fuck": this.statsService.updateFucks(guildId); break;
+            case "cum": this.statsService.updateCums(guildId); break;
+            case "anal": this.statsService.updateAnals(guildId); break;
+        }
    }
 }
+
+
+
 

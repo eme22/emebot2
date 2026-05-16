@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.admin;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.inject.Named;
 
 import com.eme22.bolo.commands.AdminCommand;
@@ -16,6 +18,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class BotEmbbedMessageCmd extends AdminCommand {
    @ConfigProperty(name = "config.aliases.message2", defaultValue = "")
    String[] aliases = new String[0];
@@ -28,13 +32,13 @@ public class BotEmbbedMessageCmd extends AdminCommand {
       this.options = Collections.singletonList(new OptionData(OptionType.STRING, "mensaje", "mensaje a decir").setRequired(true));
    }
 
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       String message = Objects.requireNonNull(event.getOption("mensaje")).getAsString();
       event.reply(event.getClient().getSuccess() + " Mensaje Enviado").setEphemeral(true).queue();
       event.getChannel().sendMessageEmbeds(new EmbedBuilder().setDescription(message).build(), new MessageEmbed[0]).queue();
    }
 
-   protected void execute(CommandEvent event) {
+   public void execute(CommandEvent event) {
       String message = event.getArgs();
       if (message.isEmpty()) {
          event.replyError(" Incluya un mensaje");
@@ -43,6 +47,14 @@ public class BotEmbbedMessageCmd extends AdminCommand {
       }
    }
 }
+
+
+
+
+
+
+
+
 
 
 

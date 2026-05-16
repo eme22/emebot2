@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.owner;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import com.eme22.bolo.Bot;
 import com.eme22.bolo.commands.OwnerCommand;
 import com.eme22.bolo.model.Server;
@@ -13,6 +15,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class SendGlobalMessageCmd extends OwnerCommand {
    @ConfigProperty(name = "config.aliases.sendom", defaultValue = "")
    String[] aliases = new String[0];
@@ -27,7 +31,7 @@ public class SendGlobalMessageCmd extends OwnerCommand {
       this.options = Collections.singletonList(new OptionData(OptionType.STRING, "message", "Mensaje a enviar").setRequired(true));
    }
 
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       String message = (String)event.getOption("message", OptionMapping::getAsString);
       if (message == null) {
          event.reply(event.getClient().getError() + " Mensaje Erroneo!!!").queue();
@@ -40,7 +44,7 @@ public class SendGlobalMessageCmd extends OwnerCommand {
       }
    }
 
-   protected void execute(CommandEvent event) {
+   public void execute(CommandEvent event) {
       String message = event.getArgs();
       if (message == null) {
          event.replyError(" Mensaje Erroneo!!!");
@@ -49,5 +53,13 @@ public class SendGlobalMessageCmd extends OwnerCommand {
       }
    }
 }
+
+
+
+
+
+
+
+
 
 

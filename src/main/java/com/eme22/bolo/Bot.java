@@ -25,10 +25,8 @@ import jakarta.inject.Inject;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import io.quarkus.scheduler.Scheduled;
-import io.quarkus.runtime.annotations.RegisterForReflection;
 
 @ApplicationScoped
-@RegisterForReflection(methods = true)
 @Slf4j
 public class Bot {
    @Generated
@@ -55,12 +53,13 @@ public class Bot {
       AloneInVoiceHandler aloneInvoiceHandler,
       SettingsManager settings,
       ArtworkImageService artworkImageService,
-      BirthdayManager birthdayManager
+      BirthdayManager birthdayManager,
+      PlaylistLoader playlistLoader
    ) {
       this.waiter = waiter;
       this.settingsManager = settings;
       this.artworkImageService = artworkImageService;
-      this.playlistLoader = new PlaylistLoader();
+      this.playlistLoader = playlistLoader;
       this.threadpool = Executors.newSingleThreadScheduledExecutor();
       this.playerManager = playerManager;
       this.playerManager.init(this);

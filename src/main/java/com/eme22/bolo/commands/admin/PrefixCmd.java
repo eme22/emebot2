@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.admin;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.inject.Named;
 
 import com.eme22.bolo.Bot;
@@ -15,6 +17,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class PrefixCmd extends AdminCommand {
    @ConfigProperty(name = "config.aliases.prefix", defaultValue = "")
    String[] aliases = new String[0];
@@ -29,7 +33,7 @@ public class PrefixCmd extends AdminCommand {
       );
    }
 
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       String prefix = event.optString("prefix");
       Server s = (Server)event.getClient().getSettingsFor(event.getGuild());
       if (prefix != null && !prefix.equalsIgnoreCase("none")) {
@@ -43,7 +47,7 @@ public class PrefixCmd extends AdminCommand {
       s.persist();
    }
 
-   protected void execute(CommandEvent event) {
+   public void execute(CommandEvent event) {
       if (event.getArgs().isEmpty()) {
          event.replyError("Please include a prefix or NONE");
       } else {
@@ -60,6 +64,14 @@ public class PrefixCmd extends AdminCommand {
       }
    }
 }
+
+
+
+
+
+
+
+
 
 
 

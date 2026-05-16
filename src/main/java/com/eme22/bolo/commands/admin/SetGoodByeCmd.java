@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.admin;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.inject.Named;
 
 import com.eme22.bolo.commands.AdminCommand;
@@ -18,6 +20,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class SetGoodByeCmd extends AdminCommand {
    @ConfigProperty(name = "config.aliases.setgoodbye", defaultValue = "")
    String[] aliases = new String[0];
@@ -33,7 +37,7 @@ public class SetGoodByeCmd extends AdminCommand {
       );
    }
 
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       TextChannel channel = event.getOption("canal").getAsChannel().asTextChannel();
       Server s = (Server)event.getClient().getSettingsFor(event.getGuild());
       s.setDespedidasChannelId(channel.getIdLong());
@@ -41,7 +45,7 @@ public class SetGoodByeCmd extends AdminCommand {
       event.reply(event.getClient().getSuccess() + " El canal de las despedidas es ahora <#" + channel.getId() + ">").queue();
    }
 
-   protected void execute(CommandEvent event) {
+   public void execute(CommandEvent event) {
       if (event.getArgs().isEmpty()) {
          event.reply(event.getClient().getError() + " Ponga un canal de texto o NONE");
       } else {
@@ -65,6 +69,14 @@ public class SetGoodByeCmd extends AdminCommand {
       }
    }
 }
+
+
+
+
+
+
+
+
 
 
 

@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.owner;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import com.eme22.bolo.Bot;
 import com.eme22.bolo.commands.OwnerCommand;
 import com.eme22.bolo.configuration.LavalinkProperties;
@@ -19,6 +21,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class ReloadNodesCmd extends OwnerCommand {
    private final Bot bot;
    private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
@@ -61,14 +65,14 @@ public class ReloadNodesCmd extends OwnerCommand {
       this.guildOnly = false;
    }
 
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       this.fireRefreshEvent();
       this.registerLavalinkNodes();
       LanguageService languageService = this.bot.getSettingsManager().getLanguageService(event.getGuild());
       event.reply(languageService.getMessage("reloadnodes.success")).queue();
    }
 
-   protected void execute(CommandEvent event) {
+   public void execute(CommandEvent event) {
       this.fireRefreshEvent();
       this.removeNodes();
       this.registerLavalinkNodes();
@@ -99,6 +103,14 @@ public class ReloadNodesCmd extends OwnerCommand {
          );
    }
 }
+
+
+
+
+
+
+
+
 
 
 

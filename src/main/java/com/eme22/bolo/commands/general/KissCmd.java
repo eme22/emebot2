@@ -1,5 +1,8 @@
 package com.eme22.bolo.commands.general;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
+
 import com.eme22.bolo.nsfw.NSFWStrings;
 import com.eme22.bolo.stats.StatsService;
 import com.eme22.imageapi.AnimeImageClient;
@@ -12,6 +15,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class KissCmd extends ActionsCmd {
    @Inject
    public KissCmd(@ConfigProperty(name = "config.aliases.kiss", defaultValue = "") String[] aliases, StatsService statsService, AnimeImageClient animeImageClient) {
@@ -39,5 +44,10 @@ public class KissCmd extends ActionsCmd {
       return animeImageClient.getNekosEndPoint(NEKO.KISS);
    }
 }
+
+
+
+
+
 
 

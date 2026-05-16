@@ -1,5 +1,8 @@
 package com.eme22.bolo.commands.music;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
+
 import com.eme22.bolo.Bot;
 import com.eme22.bolo.audio.AudioHandler;
 import com.eme22.bolo.audio.RequestMetadata;
@@ -11,6 +14,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class SkipCmd extends MusicCommand {
    @ConfigProperty(name = "config.aliases.voteskip", defaultValue = "")
    String[] aliases = new String[0];
@@ -135,5 +140,10 @@ public class SkipCmd extends MusicCommand {
       }
    }
 }
+
+
+
+
+
 
 

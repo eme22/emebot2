@@ -1,5 +1,8 @@
 package com.eme22.bolo.commands.admin;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
+
 import jakarta.inject.Named;
 
 import com.eme22.bolo.commands.AdminCommand;
@@ -16,8 +19,9 @@ import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
-
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class SetWelcomeCmd extends AdminCommand {
    @ConfigProperty(name = "config.aliases.sethello", defaultValue = "")
    String[] aliases = new String[0];
@@ -33,7 +37,8 @@ public class SetWelcomeCmd extends AdminCommand {
       );
    }
 
-   protected void execute(SlashCommandEvent event) {
+   @Override
+   public void execute(SlashCommandEvent event) {
       TextChannel channel = event.getOption("canal").getAsChannel().asTextChannel();
       Server s = (Server)event.getClient().getSettingsFor(event.getGuild());
       s.setBienvenidasChannelId(channel.getIdLong());
@@ -41,7 +46,8 @@ public class SetWelcomeCmd extends AdminCommand {
       event.reply(event.getClient().getSuccess() + " El canal de las bienvenidas es ahora <#" + channel.getId() + ">").queue();
    }
 
-   protected void execute(CommandEvent event) {
+   @Override
+   public void execute(CommandEvent event) {
       if (event.getArgs().isEmpty()) {
          event.replyError(" Ponga un canal de texto o NONE");
       } else {
@@ -65,6 +71,11 @@ public class SetWelcomeCmd extends AdminCommand {
       }
    }
 }
+
+
+
+
+
 
 
 

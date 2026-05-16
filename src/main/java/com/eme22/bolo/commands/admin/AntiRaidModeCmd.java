@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.admin;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.inject.Named;
 
 import com.eme22.bolo.Bot;
@@ -17,6 +19,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class AntiRaidModeCmd extends AdminCommand {
    private final Bot bot;
    @ConfigProperty(name = "config.aliases.enableantiraidmode", defaultValue = "")
@@ -30,7 +34,7 @@ public class AntiRaidModeCmd extends AdminCommand {
       this.options = Collections.singletonList(new OptionData(OptionType.BOOLEAN, "estado", "activa o desactiva el modo anti raid.").setRequired(true));
    }
 
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       OptionMapping canal = event.getOption("estado");
       Server s = (Server)event.getClient().getSettingsFor(event.getGuild());
       if (canal != null && canal.getAsBoolean()) {
@@ -43,7 +47,7 @@ public class AntiRaidModeCmd extends AdminCommand {
       s.persist();
    }
 
-   protected void execute(CommandEvent event) {
+   public void execute(CommandEvent event) {
       String canal = event.getArgs();
       Server s = (Server)event.getClient().getSettingsFor(event.getGuild());
       if (canal != null && canal.equals("on")) {
@@ -64,6 +68,14 @@ public class AntiRaidModeCmd extends AdminCommand {
       });
    }
 }
+
+
+
+
+
+
+
+
 
 
 

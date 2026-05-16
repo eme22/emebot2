@@ -1,5 +1,8 @@
 package com.eme22.bolo.commands.dj;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
+
 import jakarta.inject.Named;
 
 import com.eme22.bolo.Bot;
@@ -19,6 +22,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class ForceRemoveCmd extends DJCommand {
    @ConfigProperty(name = "config.aliases.forceremove", defaultValue = "")
    String[] aliases = new String[0];
@@ -85,6 +90,11 @@ public class ForceRemoveCmd extends DJCommand {
       }
    }
 }
+
+
+
+
+
 
 
 

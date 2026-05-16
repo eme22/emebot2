@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.general;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import club.minnced.discord.webhook.external.JDAWebhookClient;
 import com.eme22.bolo.Bot;
 import com.eme22.bolo.commands.BaseCommand;
@@ -21,6 +23,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class SendMessageAsCmd extends BaseCommand {
    @ConfigProperty(name = "config.aliases.sendmessageas", defaultValue = "")
    String[] aliases = new String[0];
@@ -36,7 +40,7 @@ public class SendMessageAsCmd extends BaseCommand {
       this.guildOnly = true;
    }
 
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       String message = event.getOption("mensaje").getAsString();
       User usuario = event.getOption("usuario").getAsUser();
 
@@ -83,7 +87,7 @@ public class SendMessageAsCmd extends BaseCommand {
       }
    }
 
-   protected void execute(CommandEvent event) {
+   public void execute(CommandEvent event) {
       if (event.getArgs().isEmpty()) {
          event.replyError(" Por favor incluya al menos un usuario y mensaje");
       } else {
@@ -104,5 +108,13 @@ public class SendMessageAsCmd extends BaseCommand {
       }
    }
 }
+
+
+
+
+
+
+
+
 
 

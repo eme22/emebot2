@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.general;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import com.eme22.bolo.Bot;
 import com.eme22.bolo.commands.BaseCommand;
 import com.eme22.bolo.model.Server;
@@ -9,6 +11,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class RemoveBirthdayCmd extends BaseCommand {
    Bot bot;
    @ConfigProperty(name = "config.aliases.removebirthday", defaultValue = "")
@@ -21,19 +25,27 @@ public class RemoveBirthdayCmd extends BaseCommand {
       this.guildOnly = true;
    }
 
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       Server s = this.bot.getSettingsManager().getSettings(event.getGuild());
       s.removeBirthDay(event.getUser().getIdLong());
       s.persist();
       event.reply(event.getClient().getSuccess() + " Se ha borrado tu cumpleaÃ±os").setEphemeral(true).queue();
    }
 
-   protected void execute(CommandEvent event) {
+   public void execute(CommandEvent event) {
       Server s = this.bot.getSettingsManager().getSettings(event.getGuild());
       s.removeBirthDay(event.getMember().getUser().getIdLong());
       s.persist();
       event.replySuccess(" Se ha borrado tu cumpleaÃ±os");
    }
 }
+
+
+
+
+
+
+
+
 
 

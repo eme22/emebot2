@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.admin;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.inject.Named;
 
 import com.eme22.bolo.Bot;
@@ -12,6 +14,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class SendBirthDayMessageInCurrentCmd extends AdminCommand {
    @ConfigProperty(name = "config.aliases.forcebirthdaycurrent", defaultValue = "")
    String[] aliases = new String[0];
@@ -24,18 +28,26 @@ public class SendBirthDayMessageInCurrentCmd extends AdminCommand {
       this.bot = bot;
    }
 
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       this.bot.getBirthdayManager().remindBirthdays(this.bot, event.getTextChannel());
       event.reply("Mensaje de cumpleaÃ±os enviado").setEphemeral(true).queue();
    }
 
-   protected void execute(CommandEvent event) {
+   public void execute(CommandEvent event) {
       this.bot.getBirthdayManager().remindBirthdays(this.bot, event.getTextChannel());
       event.getChannel()
          .sendMessage(event.getClient().getSuccess() + " Mensaje de cumpleaÃ±os enviado ")
          .queue(m -> m.delete().queueAfter(5L, TimeUnit.SECONDS));
    }
 }
+
+
+
+
+
+
+
+
 
 
 

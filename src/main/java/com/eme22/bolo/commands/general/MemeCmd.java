@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.general;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import com.eme22.bolo.commands.BaseCommand;
 import com.eme22.bolo.model.MemeImage;
 import com.eme22.bolo.model.Server;
@@ -18,6 +20,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class MemeCmd extends BaseCommand {
    private final StatsService statsService;
 
@@ -32,7 +36,7 @@ public class MemeCmd extends BaseCommand {
       this.options = Collections.singletonList(new OptionData(OptionType.INTEGER, "posicion", "posicion del meme").setRequired(false));
    }
 
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       Server s = (Server)event.getClient().getSettingsFor(event.getGuild());
       Integer pos = null;
 
@@ -63,7 +67,7 @@ public class MemeCmd extends BaseCommand {
       });
    }
 
-   protected void execute(CommandEvent event) {
+   public void execute(CommandEvent event) {
       Server s = (Server)event.getClient().getSettingsFor(event.getGuild());
       Integer pos = null;
 
@@ -95,5 +99,13 @@ public class MemeCmd extends BaseCommand {
       event.getMessage().delete().queue();
    }
 }
+
+
+
+
+
+
+
+
 
 

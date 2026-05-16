@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.admin;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.inject.Named;
 
 import com.eme22.bolo.commands.AdminCommand;
@@ -17,6 +19,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class SetBirthDayChannelCmd extends AdminCommand {
    @ConfigProperty(name = "config.aliases.setbdaychan", defaultValue = "")
    String[] aliases = new String[0];
@@ -32,7 +36,7 @@ public class SetBirthDayChannelCmd extends AdminCommand {
       );
    }
 
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       TextChannel channel = event.getOption("canal").getAsChannel().asTextChannel();
       Server s = (Server)event.getClient().getSettingsFor(event.getGuild());
       s.setBirthdayChannelId(channel.getIdLong());
@@ -40,7 +44,7 @@ public class SetBirthDayChannelCmd extends AdminCommand {
       event.reply(event.getClient().getSuccess() + " El canal de los cumpleaÃ±os es ahora <#" + channel.getId() + ">").queue();
    }
 
-   protected void execute(CommandEvent event) {
+   public void execute(CommandEvent event) {
       if (event.getArgs().isEmpty()) {
          event.replyError(" Ponga un canal de texto o NONE");
       } else if (event.getArgs().equalsIgnoreCase("NONE")) {
@@ -62,6 +66,14 @@ public class SetBirthDayChannelCmd extends AdminCommand {
       }
    }
 }
+
+
+
+
+
+
+
+
 
 
 

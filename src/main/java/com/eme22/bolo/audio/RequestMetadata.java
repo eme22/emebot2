@@ -2,11 +2,13 @@ package com.eme22.bolo.audio;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.quarkus.runtime.annotations.RegisterForReflection;
+
 import lombok.Data;
 import lombok.Generated;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.User;
+
+import io.quarkus.runtime.annotations.RegisterForReflection;
 
 @Data
 @RegisterForReflection

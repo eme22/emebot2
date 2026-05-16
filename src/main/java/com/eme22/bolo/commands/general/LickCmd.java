@@ -1,5 +1,8 @@
 package com.eme22.bolo.commands.general;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
+
 import com.eme22.bolo.nsfw.NSFWStrings;
 import com.eme22.bolo.stats.StatsService;
 import com.eme22.imageapi.AnimeImageClient;
@@ -11,6 +14,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class LickCmd extends ActionsCmd {
    public LickCmd(@ConfigProperty(name = "config.aliases.lick", defaultValue = "") String[] aliases, StatsService statsService, AnimeImageClient animeImageClient) {
       super("lamer", aliases, statsService, animeImageClient);
@@ -37,5 +42,10 @@ public class LickCmd extends ActionsCmd {
       return animeImageClient.getImage(HM_SFW.LICK);
    }
 }
+
+
+
+
+
 
 

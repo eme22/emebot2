@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.admin;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.inject.Named;
 
 import com.eme22.bolo.commands.AdminCommand;
@@ -17,6 +19,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class ClearMessagesCmd extends AdminCommand {
    @ConfigProperty(name = "config.aliases.clear", defaultValue = "")
    String[] aliases = new String[0];
@@ -31,14 +35,14 @@ public class ClearMessagesCmd extends AdminCommand {
       );
    }
 
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       Integer values = (Integer)event.getOption("mensajes", OptionMapping::getAsInt);
       List<Message> messages = (List<Message>)event.getChannel().getHistory().retrievePast(values).complete();
       event.getTextChannel().purgeMessages(messages);
       event.reply(event.getClient().getSuccess() + " " + values + " mensajes borrados!").setEphemeral(true).queue();
    }
 
-   protected void execute(CommandEvent event) {
+   public void execute(CommandEvent event) {
       try {
          int values = Integer.parseInt(event.getArgs());
          if (values < 1 || values > 50) {
@@ -56,6 +60,14 @@ public class ClearMessagesCmd extends AdminCommand {
       }
    }
 }
+
+
+
+
+
+
+
+
 
 
 

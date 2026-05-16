@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.general;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import lombok.extern.slf4j.Slf4j;
 
 import com.eme22.bolo.Bot;
@@ -23,6 +25,8 @@ import jakarta.inject.Singleton;
 
 @Singleton @jakarta.inject.Named("HelpCmd")
 @Slf4j
+@Transactional
+@ActivateRequestContext
 public class HelpCmd extends BaseCommand {
    @Generated
    
@@ -43,7 +47,7 @@ public class HelpCmd extends BaseCommand {
       this.bot = bot;
    }
 
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       LanguageService languageService = this.bot.getSettingsManager().getLanguageService(event.getGuild());
       Server settings = this.bot.getSettingsManager().getSettings(event.getGuild());
       StringBuilder builder = new StringBuilder("Comandos de **" + event.getJDA().getSelfUser().getName() + "**\n");
@@ -101,7 +105,7 @@ public class HelpCmd extends BaseCommand {
       }
    }
 
-   protected void execute(CommandEvent event) {
+   public void execute(CommandEvent event) {
       LanguageService languageService = this.bot.getSettingsManager().getLanguageService(event.getGuild());
       Server settings = this.bot.getSettingsManager().getSettings(event.getGuild());
       StringBuilder builder = new StringBuilder("Comandos de **" + event.getSelfUser().getName() + "**\n");
@@ -151,6 +155,14 @@ public class HelpCmd extends BaseCommand {
       }
    }
 }
+
+
+
+
+
+
+
+
 
 
 

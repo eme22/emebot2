@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.admin;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.inject.Named;
 
 import com.eme22.bolo.Bot;
@@ -30,6 +32,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class BotExtendedMessage extends AdminCommand {
    private static final String DATE_PATTERN = "dd/MM HH:mm:ss";
    private static final String TIME_PATTERN = "hh.mm a";
@@ -55,7 +59,7 @@ public class BotExtendedMessage extends AdminCommand {
       );
    }
 
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       LanguageService lang = this.bot.getSettingsManager().getLanguageService(event.getGuild());
       OptionMapping intervalo = event.getOption("intervalo");
       OptionMapping inicio = event.getOption("inicio");
@@ -75,7 +79,7 @@ public class BotExtendedMessage extends AdminCommand {
       }
    }
 
-   protected void execute(CommandEvent event) {
+   public void execute(CommandEvent event) {
       LanguageService lang = this.bot.getSettingsManager().getLanguageService(event.getGuild());
       Pattern pattern = Pattern.compile("\\[(.*?)\\] \\[(.*?)\\] \\[(.*?)\\] \\[(.*?)\\]");
       Matcher matcher = pattern.matcher(event.getArgs());
@@ -282,6 +286,14 @@ public class BotExtendedMessage extends AdminCommand {
       );
    }
 }
+
+
+
+
+
+
+
+
 
 
 

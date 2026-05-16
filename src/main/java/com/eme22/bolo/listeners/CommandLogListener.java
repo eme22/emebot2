@@ -21,10 +21,9 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.enterprise.context.control.ActivateRequestContext;
 
-import io.quarkus.runtime.annotations.RegisterForReflection;
+
 
 @ApplicationScoped
-@RegisterForReflection(methods = true)
 @Slf4j
 public class CommandLogListener implements CommandListener {
    

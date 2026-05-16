@@ -1,5 +1,8 @@
 package com.eme22.bolo.commands.admin;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
+
 import jakarta.inject.Named;
 
 import com.eme22.bolo.commands.AdminCommand;
@@ -13,8 +16,9 @@ import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
-
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class SetWelcomeEnabledCmd extends AdminCommand {
    @ConfigProperty(name = "config.aliases.sethelloenabled", defaultValue = "")
    String[] aliases = new String[0];
@@ -27,7 +31,8 @@ public class SetWelcomeEnabledCmd extends AdminCommand {
       this.arguments = "<true - false>";
    }
 
-   protected void execute(SlashCommandEvent event) {
+   @Override
+   public void execute(SlashCommandEvent event) {
       OptionMapping canal = event.getOption("estado");
       Server s = (Server)event.getClient().getSettingsFor(event.getGuild());
       if (canal != null && canal.getAsBoolean()) {
@@ -41,7 +46,8 @@ public class SetWelcomeEnabledCmd extends AdminCommand {
       s.persist();
    }
 
-   protected void execute(CommandEvent event) {
+   @Override
+   public void execute(CommandEvent event) {
       String estado = event.getArgs();
       Server s = (Server)event.getClient().getSettingsFor(event.getGuild());
       if (estado.equals("true")) {
@@ -63,6 +69,11 @@ public class SetWelcomeEnabledCmd extends AdminCommand {
       }
    }
 }
+
+
+
+
+
 
 
 

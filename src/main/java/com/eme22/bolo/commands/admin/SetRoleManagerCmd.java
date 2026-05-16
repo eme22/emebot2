@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.admin;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.inject.Named;
 
 import com.eme22.bolo.Bot;
@@ -26,6 +28,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class SetRoleManagerCmd extends AdminCommand {
    protected final Bot bot;
    @ConfigProperty(name = "config.aliases.rolemsgbuild", defaultValue = "")
@@ -62,7 +66,7 @@ public class SetRoleManagerCmd extends AdminCommand {
       );
    }
 
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       String message = event.optString("mensaje");
       List<String> emojis = new ArrayList<>();
       List<Role> roles = new ArrayList<>();
@@ -120,7 +124,7 @@ public class SetRoleManagerCmd extends AdminCommand {
       }
    }
 
-   protected void execute(CommandEvent event) {
+   public void execute(CommandEvent event) {
       String[] args = event.getArgs().split("] ");
       if (args.length < 2) {
          event.replyError(" Por favor incluya al menos un mensaje, un emoji y un rol");
@@ -176,6 +180,14 @@ public class SetRoleManagerCmd extends AdminCommand {
       return map;
    }
 }
+
+
+
+
+
+
+
+
 
 
 

@@ -12,6 +12,7 @@ import dev.arbjerg.lavalink.client.player.TrackException;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -33,9 +34,17 @@ public class PlaylistLoader {
    long maxSeconds;
 
    public List<String> getPlaylistNames() {
+      if (this.playlistsFolder == null) {
+         log.error("Playlists folder is not configured!");
+         return Collections.emptyList();
+      }
       if (this.folderExists()) {
-         File folder = new File(OtherUtil.getPath(this.playlistsFolder).toString());
-         return Arrays.stream(folder.listFiles(pathname -> pathname.getName().endsWith(".txt")))
+         Path path = OtherUtil.getPath(this.playlistsFolder);
+         if (path == null) return Collections.emptyList();
+         File folder = new File(path.toString());
+         File[] files = folder.listFiles(pathname -> pathname.getName().endsWith(".txt"));
+         if (files == null) return Collections.emptyList();
+         return Arrays.stream(files)
             .map(f -> f.getName().substring(0, f.getName().length() - 4))
             .collect(Collectors.toList());
       } else {
@@ -45,26 +54,39 @@ public class PlaylistLoader {
    }
 
    public void createFolder() {
+      if (this.playlistsFolder == null) return;
       try {
-         Files.createDirectory(OtherUtil.getPath(this.playlistsFolder));
+         Path path = OtherUtil.getPath(this.playlistsFolder);
+         if (path != null) Files.createDirectory(path);
       } catch (IOException var2) {
       }
    }
 
    public boolean folderExists() {
-      return Files.exists(OtherUtil.getPath(this.playlistsFolder));
+      if (this.playlistsFolder == null) return false;
+      Path path = OtherUtil.getPath(this.playlistsFolder);
+      return path != null && Files.exists(path);
    }
 
    public void createPlaylist(String name) throws IOException {
-      Files.createFile(OtherUtil.getPath(this.playlistsFolder + File.separator + name + ".txt"));
+      if (this.playlistsFolder == null) throw new IOException("Playlists folder is not configured");
+      Path path = OtherUtil.getPath(this.playlistsFolder + File.separator + name + ".txt");
+      if (path == null) throw new IOException("Invalid path");
+      Files.createFile(path);
    }
 
    public void deletePlaylist(String name) throws IOException {
-      Files.delete(OtherUtil.getPath(this.playlistsFolder + File.separator + name + ".txt"));
+      if (this.playlistsFolder == null) throw new IOException("Playlists folder is not configured");
+      Path path = OtherUtil.getPath(this.playlistsFolder + File.separator + name + ".txt");
+      if (path == null) throw new IOException("Invalid path");
+      Files.delete(path);
    }
 
    public void writePlaylist(String name, String text) throws IOException {
-      Files.write(OtherUtil.getPath(this.playlistsFolder + File.separator + name + ".txt"), text.trim().getBytes());
+      if (this.playlistsFolder == null) throw new IOException("Playlists folder is not configured");
+      Path path = OtherUtil.getPath(this.playlistsFolder + File.separator + name + ".txt");
+      if (path == null) throw new IOException("Invalid path");
+      Files.write(path, text.trim().getBytes());
    }
 
    public PlaylistLoader.Playlist getPlaylist(String name) {
@@ -75,7 +97,9 @@ public class PlaylistLoader {
             if (this.folderExists()) {
                boolean[] shuffle = new boolean[]{false};
                List<String> list = new ArrayList<>();
-               Files.readAllLines(OtherUtil.getPath(this.playlistsFolder + File.separator + name + ".txt")).forEach(str -> {
+               Path path = OtherUtil.getPath(this.playlistsFolder + File.separator + name + ".txt");
+               if (path == null) return null;
+               Files.readAllLines(path).forEach(str -> {
                   String s = str.trim();
                   if (!s.isEmpty()) {
                      if (!s.startsWith("#") && !s.startsWith("//")) {

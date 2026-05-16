@@ -1,5 +1,8 @@
 package com.eme22.bolo.commands.general;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
+
 import com.eme22.bolo.Bot;
 import com.eme22.bolo.commands.BaseCommand;
 import com.eme22.bolo.model.RepeatMode;
@@ -17,8 +20,9 @@ import net.dv8tion.jda.api.entities.channel.concrete.VoiceChannel;
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
-
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class SettingsCmd extends BaseCommand {
    private static final String EMOJI = "\ud83c\udfa7";
    @ConfigProperty(name = "config.aliases.settings", defaultValue = "")
@@ -32,7 +36,8 @@ public class SettingsCmd extends BaseCommand {
       this.bot = bot;
    }
 
-   protected void execute(SlashCommandEvent event) {
+   @Override
+   public void execute(SlashCommandEvent event) {
       Server s = (Server)event.getClient().getSettingsFor(event.getGuild());
       String builder = "\ud83c\udfa7 **" + FormatUtil.filter(event.getGuild().getSelfMember().getUser().getName()) + "** settings:";
       TextChannel wchan = event.getGuild().getTextChannelById(s.getBienvenidasChannelId());
@@ -78,7 +83,8 @@ public class SettingsCmd extends BaseCommand {
       event.reply(messageCreateBuilder.build()).queue();
    }
 
-   protected void execute(CommandEvent event) {
+   @Override
+   public void execute(CommandEvent event) {
       Server s = (Server)event.getClient().getSettingsFor(event.getGuild());
       String builder = "\ud83c\udfa7 **" + FormatUtil.filter(event.getSelfUser().getName()) + "** settings:";
       TextChannel wchan = event.getGuild().getTextChannelById(s.getBienvenidasChannelId());
@@ -124,5 +130,10 @@ public class SettingsCmd extends BaseCommand {
       event.reply(messageCreateBuilder.build());
    }
 }
+
+
+
+
+
 
 

@@ -46,10 +46,9 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.transaction.Transactional;
 
-import io.quarkus.runtime.annotations.RegisterForReflection;
+
 
 @ApplicationScoped
-@RegisterForReflection(methods = true)
 @Slf4j
 public class InteractionListener implements EventListener {
    

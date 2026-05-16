@@ -1,5 +1,8 @@
 package com.eme22.bolo.commands.general.nsfw;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
+
 import com.eme22.bolo.commands.general.ActionsCmd;
 import com.eme22.bolo.nsfw.NSFWStrings;
 import com.eme22.bolo.stats.StatsService;
@@ -11,6 +14,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class CumCmd extends ActionsCmd {
    public CumCmd(@ConfigProperty(name = "config.aliases.cum", defaultValue = "") String[] aliases, StatsService statsService, AnimeImageClient animeImageClient) {
       super("cum", aliases, statsService, animeImageClient);
@@ -36,5 +41,10 @@ public class CumCmd extends ActionsCmd {
       return animeImageClient.getImage(HM_NSFW.CUM);
    }
 }
+
+
+
+
+
 
 

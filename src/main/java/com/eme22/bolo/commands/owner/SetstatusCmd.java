@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.owner;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import com.eme22.bolo.commands.OwnerCommand;
 import com.jagrosh.jdautilities.command.CommandEvent;
 import com.jagrosh.jdautilities.command.SlashCommandEvent;
@@ -13,6 +15,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class SetstatusCmd extends OwnerCommand {
    @ConfigProperty(name = "config.aliases.shutdown", defaultValue = "")
    String[] aliases = new String[0];
@@ -32,7 +36,7 @@ public class SetstatusCmd extends OwnerCommand {
       );
    }
 
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       try {
          String url = event.optString("status", null);
          OnlineStatus status = OnlineStatus.fromKey(url);
@@ -47,7 +51,7 @@ public class SetstatusCmd extends OwnerCommand {
       }
    }
 
-   protected void execute(CommandEvent event) {
+   public void execute(CommandEvent event) {
       try {
          OnlineStatus status = OnlineStatus.fromKey(event.getArgs());
          if (status == OnlineStatus.UNKNOWN) {
@@ -61,5 +65,13 @@ public class SetstatusCmd extends OwnerCommand {
       }
    }
 }
+
+
+
+
+
+
+
+
 
 

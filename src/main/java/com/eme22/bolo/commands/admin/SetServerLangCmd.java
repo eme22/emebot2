@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.admin;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.inject.Named;
 
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +28,8 @@ import jakarta.inject.Singleton;
 
 @Singleton
 @Slf4j
+@Transactional
+@ActivateRequestContext
 public class SetServerLangCmd extends AdminCommand {
    @Generated
    
@@ -49,7 +53,7 @@ public class SetServerLangCmd extends AdminCommand {
       this.bot = bot;
    }
 
-   protected void execute(CommandEvent event) {
+   public void execute(CommandEvent event) {
       LanguageService languageService = this.bot.getSettingsManager().getLanguageService(event.getGuild());
       StringSelectMenu menu = StringSelectMenu.create("setlang")
          .addOptions(getLanguageOptions())
@@ -60,7 +64,7 @@ public class SetServerLangCmd extends AdminCommand {
          .queue();
    }
 
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       LanguageService languageService = this.bot.getSettingsManager().getLanguageService(event.getGuild());
       StringSelectMenu menu = StringSelectMenu.create("setlang")
          .addOptions(getLanguageOptions())
@@ -74,6 +78,14 @@ public class SetServerLangCmd extends AdminCommand {
          .queue();
    }
 }
+
+
+
+
+
+
+
+
 
 
 

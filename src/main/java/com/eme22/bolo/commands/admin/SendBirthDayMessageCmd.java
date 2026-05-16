@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.admin;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.inject.Named;
 
 import com.eme22.bolo.Bot;
@@ -13,6 +15,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class SendBirthDayMessageCmd extends AdminCommand {
    @ConfigProperty(name = "config.aliases.forcebirthday", defaultValue = "")
    String[] aliases = new String[0];
@@ -25,7 +29,7 @@ public class SendBirthDayMessageCmd extends AdminCommand {
       this.bot = bot;
    }
 
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       Server s = (Server)event.getClient().getSettingsFor(event.getGuild());
       if (s.getBirthdayChannelId() == 0L) {
          event.reply(event.getClient().getError() + " No hay un canal de cumpleaÃ±os especificado").setEphemeral(true).queue();
@@ -39,7 +43,7 @@ public class SendBirthDayMessageCmd extends AdminCommand {
       }
    }
 
-   protected void execute(CommandEvent event) {
+   public void execute(CommandEvent event) {
       Server s = (Server)event.getClient().getSettingsFor(event.getGuild());
       if (s.getBirthdayChannelId() == 0L) {
          event.replyError(" No hay un canal de cumpleaÃ±os especificado");
@@ -53,6 +57,14 @@ public class SendBirthDayMessageCmd extends AdminCommand {
       }
    }
 }
+
+
+
+
+
+
+
+
 
 
 

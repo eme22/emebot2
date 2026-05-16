@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.general;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import lombok.extern.slf4j.Slf4j;
 
 import com.eme22.bolo.commands.BaseCommand;
@@ -27,6 +29,8 @@ import org.jetbrains.annotations.NotNull;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 @Slf4j
+@Transactional
+@ActivateRequestContext
 public class CreateMemeCmd extends BaseCommand {
    @Generated
    
@@ -48,7 +52,7 @@ public class CreateMemeCmd extends BaseCommand {
       );
    }
 
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       String url = event.getOption("url").getAsString();
       String textoS = event.getOption("superior").getAsString();
       String textoI = event.getOption("inferior").getAsString();
@@ -76,7 +80,7 @@ public class CreateMemeCmd extends BaseCommand {
          .queue(end -> image.delete());
    }
 
-   protected void execute(CommandEvent event) {
+   public void execute(CommandEvent event) {
       if (event.getArgs().isEmpty()) {
          event.replyError(" Por favor incluya al menos un usuario y mensaje");
       } else {
@@ -133,5 +137,13 @@ public class CreateMemeCmd extends BaseCommand {
       return converted;
    }
 }
+
+
+
+
+
+
+
+
 
 

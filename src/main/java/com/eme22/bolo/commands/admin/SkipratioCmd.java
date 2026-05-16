@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.admin;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.inject.Named;
 
 import com.eme22.bolo.commands.AdminCommand;
@@ -15,6 +17,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class SkipratioCmd extends AdminCommand {
    @ConfigProperty(name = "config.aliases.setskip", defaultValue = "")
    String[] aliases = new String[0];
@@ -29,7 +33,7 @@ public class SkipratioCmd extends AdminCommand {
       );
    }
 
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       int val = Integer.parseInt(Objects.requireNonNull(Objects.requireNonNull(event.getOption("radio")).getAsString()));
       Server s = (Server)event.getClient().getSettingsFor(event.getGuild());
       s.setSkipRatio(val / 100.0);
@@ -38,7 +42,7 @@ public class SkipratioCmd extends AdminCommand {
          .queue();
    }
 
-   protected void execute(CommandEvent event) {
+   public void execute(CommandEvent event) {
       try {
          int val = Integer.parseInt(event.getArgs().endsWith("%") ? event.getArgs().substring(0, event.getArgs().length() - 1) : event.getArgs());
          if (val < 0 || val > 100) {
@@ -57,6 +61,14 @@ public class SkipratioCmd extends AdminCommand {
       }
    }
 }
+
+
+
+
+
+
+
+
 
 
 

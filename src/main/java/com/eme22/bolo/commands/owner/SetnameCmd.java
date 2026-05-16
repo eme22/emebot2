@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.owner;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import com.eme22.bolo.commands.OwnerCommand;
 import com.jagrosh.jdautilities.command.CommandEvent;
 import com.jagrosh.jdautilities.command.SlashCommandEvent;
@@ -11,6 +13,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class SetnameCmd extends OwnerCommand {
    @ConfigProperty(name = "config.aliases.setname", defaultValue = "")
    String[] aliases = new String[0];
@@ -23,7 +27,7 @@ public class SetnameCmd extends OwnerCommand {
       this.options = Collections.singletonList(new OptionData(OptionType.STRING, "name", "Setea el nombre del bot"));
    }
 
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       String url = event.optString("name", null);
 
       try {
@@ -37,7 +41,7 @@ public class SetnameCmd extends OwnerCommand {
       }
    }
 
-   protected void execute(CommandEvent event) {
+   public void execute(CommandEvent event) {
       try {
          String oldname = event.getSelfUser().getName();
          event.getSelfUser().getManager().setName(event.getArgs()).complete(false);
@@ -49,5 +53,13 @@ public class SetnameCmd extends OwnerCommand {
       }
    }
 }
+
+
+
+
+
+
+
+
 
 

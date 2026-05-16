@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.owner;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import com.eme22.bolo.Bot;
 import com.eme22.bolo.commands.OwnerCommand;
 import com.eme22.bolo.utils.OtherUtil;
@@ -16,6 +18,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class SetavatarCmd extends OwnerCommand {
    @ConfigProperty(name = "config.aliases.setavatar", defaultValue = "")
    String[] aliases = new String[0];
@@ -30,7 +34,7 @@ public class SetavatarCmd extends OwnerCommand {
       this.options = Collections.singletonList(new OptionData(OptionType.STRING, "url", "Setea el avatar del bot").setRequired(true));
    }
 
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       String url = event.optString("url", null);
 
       try {
@@ -53,7 +57,7 @@ public class SetavatarCmd extends OwnerCommand {
       }
    }
 
-   protected void execute(CommandEvent event) {
+   public void execute(CommandEvent event) {
       String url;
       if (event.getArgs().isEmpty()) {
          if (!event.getMessage().getAttachments().isEmpty() && ((Attachment)event.getMessage().getAttachments().get(0)).isImage()) {
@@ -80,5 +84,13 @@ public class SetavatarCmd extends OwnerCommand {
       }
    }
 }
+
+
+
+
+
+
+
+
 
 

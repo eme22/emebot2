@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.general;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import com.eme22.bolo.Bot;
 import com.eme22.bolo.language.LanguageService;
 import com.eme22.bolo.stats.StatsService;
@@ -13,6 +15,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class AvatarContextMenu extends UserContextMenu {
    private final StatsService statsService;
    private final Bot bot;
@@ -35,10 +39,18 @@ public class AvatarContextMenu extends UserContextMenu {
       this.bot = bot;
    }
 
-   protected void execute(UserContextMenuEvent event) {
+   public void execute(UserContextMenuEvent event) {
       LanguageService languageService = this.bot.getSettingsManager().getLanguageService(event.getGuild());
       OtherUtil.sendAvatar(event, event.getTargetMember(), this.statsService, languageService, this.bot);
    }
 }
+
+
+
+
+
+
+
+
 
 

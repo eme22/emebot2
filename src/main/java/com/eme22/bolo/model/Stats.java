@@ -7,7 +7,6 @@ import jakarta.persistence.Id;
 import lombok.Generated;
 
 @Entity(name = "embot_stats")
-@RegisterForReflection
 public class Stats {
    @Id
    @Column(name = "stat_name", nullable = false)

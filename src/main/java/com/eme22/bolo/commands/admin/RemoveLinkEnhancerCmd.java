@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.admin;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.inject.Named;
 
 import com.eme22.bolo.Bot;
@@ -19,6 +21,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class RemoveLinkEnhancerCmd extends AdminCommand {
    private final Bot bot;
    @ConfigProperty(name = "config.aliases.removelinkenhancer", defaultValue = "")
@@ -53,7 +57,7 @@ public class RemoveLinkEnhancerCmd extends AdminCommand {
       this.options = Collections.singletonList(new OptionData(OptionType.INTEGER, "id", "ID of the link Enhancer to delete").setRequired(true));
    }
 
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       Server settings = (Server)event.getClient().getSettingsFor(event.getGuild());
       LanguageService languageService = this.bot.getSettingsManager().getLanguageService(event.getGuild());
       int id = Integer.parseInt(event.getOption("id").getAsString());
@@ -67,7 +71,7 @@ public class RemoveLinkEnhancerCmd extends AdminCommand {
       }
    }
 
-   protected void execute(CommandEvent event) {
+   public void execute(CommandEvent event) {
       Server settings = (Server)event.getClient().getSettingsFor(event.getGuild());
       LanguageService languageService = this.bot.getSettingsManager().getLanguageService(event.getGuild());
       if (event.getArgs().isEmpty()) {
@@ -85,6 +89,14 @@ public class RemoveLinkEnhancerCmd extends AdminCommand {
       }
    }
 }
+
+
+
+
+
+
+
+
 
 
 

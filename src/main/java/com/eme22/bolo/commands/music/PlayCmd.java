@@ -1,5 +1,8 @@
 package com.eme22.bolo.commands.music;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
+
 import lombok.extern.slf4j.Slf4j;
 
 import com.eme22.bolo.Bot;
@@ -42,6 +45,8 @@ import jakarta.inject.Singleton;
 
 @Singleton
 @Slf4j
+@Transactional
+@ActivateRequestContext
 public class PlayCmd extends MusicCommand {
    @Generated
    
@@ -231,12 +236,12 @@ public class PlayCmd extends MusicCommand {
    }
 
    @Override
-   protected boolean shouldConnect(CommandEvent event) {
+   public boolean shouldConnect(CommandEvent event) {
       return !event.getArgs().isEmpty() || !event.getMessage().getAttachments().isEmpty();
    }
 
    @Override
-   protected boolean shouldConnect(SlashCommandEvent event) {
+   public boolean shouldConnect(SlashCommandEvent event) {
       return event.getOption("link") != null;
    }
 
@@ -532,6 +537,12 @@ public class PlayCmd extends MusicCommand {
 
    }
 }
+
+
+
+
+
+
 
 
 

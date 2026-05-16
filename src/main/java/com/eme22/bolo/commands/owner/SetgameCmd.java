@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.owner;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import com.eme22.bolo.Bot;
 import com.eme22.bolo.commands.OwnerCommand;
 import com.jagrosh.jdautilities.command.CommandEvent;
@@ -13,6 +15,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class SetgameCmd extends OwnerCommand {
    @ConfigProperty(name = "config.aliases.setgame", defaultValue = "")
    String[] aliases = new String[0];
@@ -25,7 +29,7 @@ public class SetgameCmd extends OwnerCommand {
       this.children = new OwnerCommand[]{new SetgameCmd.SetlistenCmd(), new SetgameCmd.SetstreamCmd(), new SetgameCmd.SetwatchCmd()};
    }
 
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       String title = " a";
 
       try {
@@ -43,7 +47,7 @@ public class SetgameCmd extends OwnerCommand {
       }
    }
 
-   protected void execute(CommandEvent event) {
+   public void execute(CommandEvent event) {
       String title = event.getArgs().toLowerCase().startsWith("playing") ? event.getArgs().substring(7).trim() : event.getArgs();
 
       try {
@@ -70,7 +74,7 @@ public class SetgameCmd extends OwnerCommand {
          this.options = Collections.singletonList(new OptionData(OptionType.STRING, "title", "Setea la cancion que el bot esta escuchando").setRequired(true));
       }
 
-      protected void execute(SlashCommandEvent event) {
+      public void execute(SlashCommandEvent event) {
          String title = event.optString("title", null);
          if (title == null) {
             event.reply(event.getClient().getError() + " Por favor incluya un titulo!").queue();
@@ -84,7 +88,7 @@ public class SetgameCmd extends OwnerCommand {
          }
       }
 
-      protected void execute(CommandEvent event) {
+      public void execute(CommandEvent event) {
          if (event.getArgs().isEmpty()) {
             event.replyError("Please include a title to listen to!");
          } else {
@@ -113,7 +117,7 @@ public class SetgameCmd extends OwnerCommand {
          );
       }
 
-      protected void execute(CommandEvent event) {
+      public void execute(CommandEvent event) {
          String[] parts = event.getArgs().split("\\s+", 2);
          if (parts.length < 2) {
             event.replyError("Please include a twitch username and the name of the game to 'stream'");
@@ -127,7 +131,7 @@ public class SetgameCmd extends OwnerCommand {
          }
       }
 
-      protected void execute(SlashCommandEvent event) {
+      public void execute(SlashCommandEvent event) {
          String user = event.optString("username", null);
          String game = event.optString("game", null);
          if (game == null) {
@@ -153,7 +157,7 @@ public class SetgameCmd extends OwnerCommand {
          this.options = Collections.singletonList(new OptionData(OptionType.STRING, "title", "Setea el video que el bot esta viendo").setRequired(true));
       }
 
-      protected void execute(SlashCommandEvent event) {
+      public void execute(SlashCommandEvent event) {
          String title = event.optString("title", null);
          if (title != null && !title.isEmpty()) {
             try {
@@ -167,7 +171,7 @@ public class SetgameCmd extends OwnerCommand {
          }
       }
 
-      protected void execute(CommandEvent event) {
+      public void execute(CommandEvent event) {
          if (event.getArgs().isEmpty()) {
             event.replyError("Please include a title to watch!");
          } else {
@@ -183,5 +187,13 @@ public class SetgameCmd extends OwnerCommand {
       }
    }
 }
+
+
+
+
+
+
+
+
 
 

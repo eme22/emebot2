@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.admin;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.inject.Named;
 
 import com.eme22.bolo.commands.AdminCommand;
@@ -14,6 +16,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class AddEightBallAnswer extends AdminCommand {
    @ConfigProperty(name = "config.aliases.add8ballanswer", defaultValue = "")
    String[] aliases = new String[0];
@@ -26,7 +30,7 @@ public class AddEightBallAnswer extends AdminCommand {
       this.options = Collections.singletonList(new OptionData(OptionType.STRING, "respuesta", "respuesta que vas a agregar").setRequired(true));
    }
 
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       Server settings = (Server)event.getClient().getSettingsFor(event.getGuild());
       String answer = event.getOption("respuesta").getAsString();
       settings.addToEightBallAnswers(answer);
@@ -34,7 +38,7 @@ public class AddEightBallAnswer extends AdminCommand {
       event.reply(event.getClient().getSuccess() + " **Respuesta agregada:** " + answer).queue();
    }
 
-   protected void execute(CommandEvent event) {
+   public void execute(CommandEvent event) {
       Server settings = (Server)event.getClient().getSettingsFor(event.getGuild());
       String answer = event.getArgs();
       settings.addToEightBallAnswers(answer);
@@ -42,6 +46,14 @@ public class AddEightBallAnswer extends AdminCommand {
       event.replySuccess(" **Respuesta agregada:** " + answer);
    }
 }
+
+
+
+
+
+
+
+
 
 
 

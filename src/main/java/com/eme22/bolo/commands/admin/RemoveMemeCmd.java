@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.admin;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.inject.Named;
 
 import com.eme22.bolo.commands.AdminCommand;
@@ -15,6 +17,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class RemoveMemeCmd extends AdminCommand {
    @ConfigProperty(name = "config.aliases.delmeme", defaultValue = "")
    String[] aliases = new String[0];
@@ -27,7 +31,7 @@ public class RemoveMemeCmd extends AdminCommand {
       this.options = Collections.singletonList(new OptionData(OptionType.INTEGER, "posicion", "posicion en la que esta el meme a borrar").setRequired(true));
    }
 
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       int a = Integer.parseInt(Objects.requireNonNull(Objects.requireNonNull(event.getOption("posicion")).getAsString()));
       Server s = (Server)event.getClient().getSettingsFor(event.getGuild());
 
@@ -42,7 +46,7 @@ public class RemoveMemeCmd extends AdminCommand {
       event.reply(event.getClient().getSuccess() + " Imagen " + a + " borrada de la lista de memes").queue();
    }
 
-   protected void execute(CommandEvent event) {
+   public void execute(CommandEvent event) {
       String args = event.getArgs();
       if (args.isEmpty()) {
          event.reply(event.getClient().getError() + " Incluya un numero");
@@ -69,6 +73,14 @@ public class RemoveMemeCmd extends AdminCommand {
       }
    }
 }
+
+
+
+
+
+
+
+
 
 
 

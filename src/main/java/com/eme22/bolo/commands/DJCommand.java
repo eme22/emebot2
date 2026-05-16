@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import com.eme22.bolo.Bot;
 import com.eme22.bolo.language.LanguageService;
 import com.eme22.bolo.model.Server;
@@ -10,7 +12,8 @@ import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
-
+@Transactional
+@ActivateRequestContext
 public abstract class DJCommand extends MusicCommand {
    @Inject
    public DJCommand(Bot bot, @Named("djCategory") Category dj) {
@@ -19,7 +22,7 @@ public abstract class DJCommand extends MusicCommand {
    }
 
    @Override
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       Server settings = (Server)event.getClient().getSettingsFor(event.getGuild());
       LanguageService lang = this.bot.getSettingsManager().getLanguageService(event.getGuild().getIdLong());
       TextChannel tchannel = event.getGuild().getTextChannelById(settings.getTextChannelId());
@@ -46,7 +49,7 @@ public abstract class DJCommand extends MusicCommand {
       }
    }
 
-   boolean isDJ(SlashCommandEvent event) {
+   public boolean isDJ(SlashCommandEvent event) {
       if (event.getUser().getId().equals(event.getClient().getOwnerId())) {
          return true;
       } else if (event.getUser().equals(event.getGuild().getOwner().getUser())) {
@@ -63,3 +66,12 @@ public abstract class DJCommand extends MusicCommand {
       }
    }
 }
+
+
+
+
+
+
+
+
+

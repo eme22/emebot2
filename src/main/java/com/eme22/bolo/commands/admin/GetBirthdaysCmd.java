@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.admin;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.inject.Named;
 
 import com.eme22.bolo.Bot;
@@ -16,6 +18,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class GetBirthdaysCmd extends AdminCommand {
    @ConfigProperty(name = "config.aliases.getbirthdays", defaultValue = "")
    String[] aliases = new String[0];
@@ -29,7 +33,7 @@ public class GetBirthdaysCmd extends AdminCommand {
       this.options = Collections.singletonList(new OptionData(OptionType.BOOLEAN, "hoy", "obtiene los cumpleaÃ±os de hoy").setRequired(false));
    }
 
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       Server s = (Server)event.getClient().getSettingsFor(event.getGuild());
       if (event.getOption("hoy") != null && event.getOption("hoy").getAsBoolean()) {
          event.replyEmbeds(this.bot.getBirthdayManager().getBirthdaysToday(event.getGuild()), new MessageEmbed[0]).queue();
@@ -38,7 +42,7 @@ public class GetBirthdaysCmd extends AdminCommand {
       }
    }
 
-   protected void execute(CommandEvent event) {
+   public void execute(CommandEvent event) {
       Server s = (Server)event.getClient().getSettingsFor(event.getGuild());
       if (event.getArgs().equalsIgnoreCase("hoy")) {
          event.getTextChannel().sendMessageEmbeds(this.bot.getBirthdayManager().getBirthdaysToday(event.getGuild()), new MessageEmbed[0]).queue();
@@ -47,5 +51,13 @@ public class GetBirthdaysCmd extends AdminCommand {
       }
    }
 }
+
+
+
+
+
+
+
+
 
 

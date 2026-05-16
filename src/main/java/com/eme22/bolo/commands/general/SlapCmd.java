@@ -1,5 +1,8 @@
 package com.eme22.bolo.commands.general;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
+
 import com.eme22.bolo.nsfw.NSFWStrings;
 import com.eme22.bolo.stats.StatsService;
 import com.eme22.imageapi.AnimeImageClient;
@@ -14,6 +17,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class SlapCmd extends ActionsCmd {
    public SlapCmd(@ConfigProperty(name = "config.aliases.slap", defaultValue = "") String[] aliases, StatsService statsService, AnimeImageClient animeImageClient) {
       super("cachetear", aliases, statsService, animeImageClient);
@@ -52,5 +57,10 @@ public class SlapCmd extends ActionsCmd {
       return animeImageClient.getImage(NEKO.SLAP);
    }
 }
+
+
+
+
+
 
 

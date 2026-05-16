@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.admin;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.inject.Named;
 
 import com.eme22.bolo.Bot;
@@ -18,6 +20,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class SetBirthdayTemplateMessageCmd extends AdminCommand {
    protected final Bot bot;
    @ConfigProperty(name = "config.aliases.birthdaytemplate", defaultValue = "")
@@ -35,7 +39,7 @@ public class SetBirthdayTemplateMessageCmd extends AdminCommand {
       );
    }
 
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       OptionMapping headerOption = event.getOption("header");
       OptionMapping footerOption = event.getOption("footer");
       if (headerOption != null && footerOption != null) {
@@ -49,7 +53,7 @@ public class SetBirthdayTemplateMessageCmd extends AdminCommand {
       }
    }
 
-   protected void execute(CommandEvent event) {
+   public void execute(CommandEvent event) {
       Pattern pattern = Pattern.compile("\\[(.*?)\\]");
       Matcher matcher = pattern.matcher(event.getArgs());
       if (!matcher.find()) {
@@ -69,6 +73,14 @@ public class SetBirthdayTemplateMessageCmd extends AdminCommand {
       }
    }
 }
+
+
+
+
+
+
+
+
 
 
 

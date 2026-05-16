@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.admin;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.inject.Named;
 
 import com.eme22.bolo.commands.AdminCommand;
@@ -18,6 +20,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class AddImageChannel extends AdminCommand {
    @ConfigProperty(name = "config.aliases.addimgch", defaultValue = "")
    String[] aliases = new String[0];
@@ -30,7 +34,7 @@ public class AddImageChannel extends AdminCommand {
       this.options = Collections.singletonList(new OptionData(OptionType.CHANNEL, "canal", "selecciona el canal a agregar.").setRequired(true));
    }
 
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       OptionMapping canal = event.getOption("canal");
       TextChannel textChannel = null;
       if (canal != null) {
@@ -49,7 +53,7 @@ public class AddImageChannel extends AdminCommand {
       }
    }
 
-   protected void execute(CommandEvent event) {
+   public void execute(CommandEvent event) {
       if (event.getArgs().isEmpty()) {
          event.replyError(" Incluya un canal de Texto");
       } else {
@@ -67,6 +71,14 @@ public class AddImageChannel extends AdminCommand {
       }
    }
 }
+
+
+
+
+
+
+
+
 
 
 

@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.admin;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.inject.Named;
 
 import com.eme22.bolo.commands.AdminCommand;
@@ -21,6 +23,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class CloneAndDeleteChannel extends AdminCommand {
    @ConfigProperty(name = "config.aliases.clonechannel2", defaultValue = "")
    String[] aliases = new String[0];
@@ -32,7 +36,7 @@ public class CloneAndDeleteChannel extends AdminCommand {
       this.options = Collections.singletonList(new OptionData(OptionType.CHANNEL, "canal", "selecciona el canal a agregar.").setRequired(true));
    }
 
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       TextChannel channel = (TextChannel)event.optMessageChannel("canal");
       channel.createCopy().queue(success -> {
          Server s = (Server)event.getClient().getSettingsFor(event.getGuild());
@@ -40,7 +44,7 @@ public class CloneAndDeleteChannel extends AdminCommand {
       });
    }
 
-   protected void execute(CommandEvent event) {
+   public void execute(CommandEvent event) {
       TextChannel channel = event.getTextChannel();
       channel.createCopy().queue(success -> {
          Server s = (Server)event.getClient().getSettingsFor(event.getGuild());
@@ -87,6 +91,14 @@ public class CloneAndDeleteChannel extends AdminCommand {
       }
    }
 }
+
+
+
+
+
+
+
+
 
 
 

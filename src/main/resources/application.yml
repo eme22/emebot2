@@ -162,8 +162,7 @@ lavalink:
     hibernate-orm:
       database:
         generation: update
-      unsupported-properties:
-        "hibernate.enable_lazy_load_no_trans": true
+      enable-lazy-load-no-trans: true
 
 "%prod":
   quarkus:
@@ -176,8 +175,7 @@ lavalink:
     hibernate-orm:
       database:
         generation: update
-      unsupported-properties:
-        "hibernate.enable_lazy_load_no_trans": true
+      enable-lazy-load-no-trans: true
   lavalink:
     servers:
       - name: ProdNode

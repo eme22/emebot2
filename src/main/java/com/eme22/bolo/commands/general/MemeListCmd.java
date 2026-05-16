@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.general;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import com.eme22.bolo.Bot;
 import com.eme22.bolo.commands.BaseCommand;
 import com.eme22.bolo.model.MemeImage;
@@ -14,6 +16,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class MemeListCmd extends BaseCommand {
    private final Builder builder;
    @ConfigProperty(name = "config.aliases.memelist", defaultValue = "")
@@ -32,7 +36,7 @@ public class MemeListCmd extends BaseCommand {
          .setTimeout(10L, TimeUnit.MINUTES);
    }
 
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       Server s = (Server)event.getClient().getSettingsFor(event.getGuild());
       List<MemeImage> data = s.getMemeImages();
       String[] songs = new String[data.size()];
@@ -50,7 +54,7 @@ public class MemeListCmd extends BaseCommand {
       }
    }
 
-   protected void execute(CommandEvent event) {
+   public void execute(CommandEvent event) {
       Server s = (Server)event.getClient().getSettingsFor(event.getGuild());
       List<MemeImage> data = s.getMemeImages();
       String[] songs = new String[data.size()];
@@ -67,5 +71,13 @@ public class MemeListCmd extends BaseCommand {
       }
    }
 }
+
+
+
+
+
+
+
+
 
 

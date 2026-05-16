@@ -7,8 +7,6 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
  * Register classes that are accessed via reflection here.
  */
 @RegisterForReflection(targets = {
-    com.eme22.bolo.model.Birthday.class,
-    com.eme22.bolo.model.Server.class,
     com.eme22.bolo.utils.OtherUtil.class
 })
 public class NativeReflectionConfig {

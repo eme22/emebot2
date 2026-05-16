@@ -1,5 +1,8 @@
 package com.eme22.bolo.commands.music;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
+
 import com.eme22.bolo.Bot;
 import com.eme22.bolo.audio.AudioHandler;
 import com.eme22.bolo.audio.QueuedTrack;
@@ -28,6 +31,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class QueueCmd extends MusicCommand {
    private final Builder builder;
    private final Bot bot;
@@ -127,5 +132,10 @@ public class QueueCmd extends MusicCommand {
       );
    }
 }
+
+
+
+
+
 
 

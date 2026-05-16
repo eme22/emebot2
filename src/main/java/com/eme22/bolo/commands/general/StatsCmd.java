@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.general;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import com.eme22.bolo.Bot;
 import com.eme22.bolo.commands.BaseCommand;
 import com.eme22.bolo.model.ServerStats;
@@ -19,6 +21,8 @@ import java.util.List;
 import java.util.Optional;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class StatsCmd extends BaseCommand {
 
    private final StatsService statsService;
@@ -35,13 +39,13 @@ public class StatsCmd extends BaseCommand {
    }
 
    @Override
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       LanguageService languageService = this.bot.getSettingsManager().getLanguageService(event.getGuild());
       event.replyEmbeds(buildStatsEmbed(event.getGuild().getIdLong(), event.getJDA().getSelfUser().getName(), languageService)).queue();
    }
 
    @Override
-   protected void execute(CommandEvent event) {
+   public void execute(CommandEvent event) {
       LanguageService languageService = this.bot.getSettingsManager().getLanguageService(event.getGuild());
       event.reply(buildStatsEmbed(event.getGuild().getIdLong(), event.getSelfUser().getName(), languageService));
    }
@@ -128,3 +132,11 @@ public class StatsCmd extends BaseCommand {
       return 0;
    }
 }
+
+
+
+
+
+
+
+

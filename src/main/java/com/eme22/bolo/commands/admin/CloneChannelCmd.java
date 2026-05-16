@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.admin;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.inject.Named;
 
 import com.eme22.bolo.commands.AdminCommand;
@@ -11,6 +13,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class CloneChannelCmd extends AdminCommand {
    @ConfigProperty(name = "config.aliases.clonechannel", defaultValue = "")
    String[] aliases = new String[0];
@@ -21,7 +25,7 @@ public class CloneChannelCmd extends AdminCommand {
       this.help = "clona el canal especificado";
    }
 
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       TextChannel channel = event.getTextChannel();
       channel.createCopy()
          .queue(
@@ -30,12 +34,20 @@ public class CloneChannelCmd extends AdminCommand {
          );
    }
 
-   protected void execute(CommandEvent event) {
+   public void execute(CommandEvent event) {
       TextChannel channel = event.getTextChannel();
       channel.createCopy()
          .queue(success -> event.replySuccess(" El canal se ha clonado con exito!!!"), error -> event.replyError("El canal no se ha podido clonar"));
    }
 }
+
+
+
+
+
+
+
+
 
 
 

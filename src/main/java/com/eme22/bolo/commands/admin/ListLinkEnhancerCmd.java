@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.admin;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.inject.Named;
 
 import com.eme22.bolo.Bot;
@@ -18,6 +20,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class ListLinkEnhancerCmd extends AdminCommand {
    private final Builder builder;
    private final Bot bot;
@@ -59,7 +63,7 @@ public class ListLinkEnhancerCmd extends AdminCommand {
          .setTimeout(1L, TimeUnit.MINUTES);
    }
 
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       Server settings = (Server)event.getClient().getSettingsFor(event.getGuild());
       LanguageService languageService = this.bot.getSettingsManager().getLanguageService(event.getGuild());
       String[] items = settings.getLinkEnhancers()
@@ -71,7 +75,7 @@ public class ListLinkEnhancerCmd extends AdminCommand {
       event.reply(languageService.getMessage("listlinkenhancer.opened")).setEphemeral(true).queue();
    }
 
-   protected void execute(CommandEvent event) {
+   public void execute(CommandEvent event) {
       Server settings = (Server)event.getClient().getSettingsFor(event.getGuild());
       LanguageService languageService = this.bot.getSettingsManager().getLanguageService(event.getGuild());
       String[] items = settings.getLinkEnhancers()
@@ -83,6 +87,14 @@ public class ListLinkEnhancerCmd extends AdminCommand {
       event.replySuccess(languageService.getMessage("listlinkenhancer.opened"), message -> message.delete().queueAfter(5L, TimeUnit.SECONDS));
    }
 }
+
+
+
+
+
+
+
+
 
 
 

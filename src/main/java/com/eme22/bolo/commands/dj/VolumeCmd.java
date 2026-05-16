@@ -1,5 +1,8 @@
 package com.eme22.bolo.commands.dj;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
+
 import jakarta.inject.Named;
 
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +28,8 @@ import jakarta.inject.Singleton;
 
 @Singleton
 @Slf4j
+@Transactional
+@ActivateRequestContext
 public class VolumeCmd extends DJCommand {
    @Generated
    
@@ -133,6 +138,11 @@ public class VolumeCmd extends DJCommand {
       }
    }
 }
+
+
+
+
+
 
 
 

@@ -1,4 +1,7 @@
 package com.eme22.bolo.commands.general;
+
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +27,8 @@ import jakarta.inject.Singleton;
 
 @Singleton
 @Slf4j
+@Transactional
+@ActivateRequestContext
 public class AboutCmd extends BaseCommand {
    @Generated
    
@@ -46,7 +51,7 @@ public class AboutCmd extends BaseCommand {
       this.botPermissions = new Permission[]{Permission.MESSAGE_EMBED_LINKS};
    }
 
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       if (oauthLink == null) {
          this.getOauthLink(event.getJDA());
       }
@@ -131,7 +136,7 @@ public class AboutCmd extends BaseCommand {
       }
    }
 
-   protected void execute(CommandEvent event) {
+   public void execute(CommandEvent event) {
       if (oauthLink == null) {
          this.getOauthLink(event.getJDA());
       }
@@ -206,6 +211,14 @@ public class AboutCmd extends BaseCommand {
       event.reply(builder.build());
    }
 }
+
+
+
+
+
+
+
+
 
 
 

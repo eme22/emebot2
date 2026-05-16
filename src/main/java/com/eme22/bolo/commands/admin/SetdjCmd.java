@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.admin;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.inject.Named;
 
 import com.eme22.bolo.commands.AdminCommand;
@@ -18,6 +20,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class SetdjCmd extends AdminCommand {
    @ConfigProperty(name = "config.aliases.setdj", defaultValue = "")
    String[] aliases = new String[0];
@@ -30,7 +34,7 @@ public class SetdjCmd extends AdminCommand {
       this.options = Collections.singletonList(new OptionData(OptionType.ROLE, "rol", "rol a poner de dj. Ponga @Everyone para limpiar").setRequired(true));
    }
 
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       Role role = event.getOption("rol").getAsRole();
       Server s = (Server)event.getClient().getSettingsFor(event.getGuild());
       if (role.getIdLong() == event.getGuild().getIdLong()) {
@@ -45,7 +49,7 @@ public class SetdjCmd extends AdminCommand {
       s.persist();
    }
 
-   protected void execute(CommandEvent event) {
+   public void execute(CommandEvent event) {
       if (event.getArgs().isEmpty()) {
          event.reply(event.getClient().getError() + " Please include a role name or NONE");
       } else {
@@ -69,6 +73,14 @@ public class SetdjCmd extends AdminCommand {
       }
    }
 }
+
+
+
+
+
+
+
+
 
 
 

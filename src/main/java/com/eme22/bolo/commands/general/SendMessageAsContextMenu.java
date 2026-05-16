@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.general;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import club.minnced.discord.webhook.external.JDAWebhookClient;
 import com.eme22.bolo.Bot;
 import com.eme22.bolo.language.LanguageService;
@@ -25,6 +27,8 @@ import net.dv8tion.jda.api.modals.Modal;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class SendMessageAsContextMenu extends UserContextMenu {
    private final Bot bot;
 
@@ -44,7 +48,7 @@ public class SendMessageAsContextMenu extends UserContextMenu {
       this.bot = bot;
    }
 
-   protected void execute(UserContextMenuEvent event) {
+   public void execute(UserContextMenuEvent event) {
       LanguageService languageService = this.bot.getSettingsManager().getLanguageService(event.getGuild());
       User usuario = event.getTargetMember().getUser();
       TextInput body = TextInput.create("body", TextInputStyle.PARAGRAPH).setMinLength(1).setMaxLength(1000).build();
@@ -89,5 +93,13 @@ public class SendMessageAsContextMenu extends UserContextMenu {
       }
    }
 }
+
+
+
+
+
+
+
+
 
 

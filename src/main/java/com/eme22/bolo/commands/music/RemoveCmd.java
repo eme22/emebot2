@@ -1,5 +1,8 @@
 package com.eme22.bolo.commands.music;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
+
 import lombok.extern.slf4j.Slf4j;
 
 import com.eme22.bolo.Bot;
@@ -22,6 +25,8 @@ import jakarta.inject.Singleton;
 
 @Singleton
 @Slf4j
+@Transactional
+@ActivateRequestContext
 public class RemoveCmd extends MusicCommand {
    @Generated
    
@@ -155,6 +160,11 @@ public class RemoveCmd extends MusicCommand {
       }
    }
 }
+
+
+
+
+
 
 
 

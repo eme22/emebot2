@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.general;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import com.eme22.bolo.Bot;
 import com.eme22.bolo.commands.BaseCommand;
 import com.jagrosh.jdautilities.command.CommandEvent;
@@ -24,6 +26,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class SubmitArtworkForBotCmd extends BaseCommand {
    private final long owner;
 
@@ -40,7 +44,7 @@ public class SubmitArtworkForBotCmd extends BaseCommand {
       this.aliases = aliases;
    }
 
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       String artist = Objects.requireNonNull(event.getOption("artista")).getAsString();
       String link = Objects.requireNonNull(event.getOption("link")).getAsString();
 
@@ -72,7 +76,7 @@ public class SubmitArtworkForBotCmd extends BaseCommand {
       privateChannel.sendMessage(messageCreateBuilder.build()).queue();
    }
 
-   protected void execute(CommandEvent event) {
+   public void execute(CommandEvent event) {
       String link = null;
       if (event.getArgs().isEmpty()) {
          List<Attachment> attachmentList = event.getMessage().getAttachments();
@@ -107,5 +111,13 @@ public class SubmitArtworkForBotCmd extends BaseCommand {
       });
    }
 }
+
+
+
+
+
+
+
+
 
 

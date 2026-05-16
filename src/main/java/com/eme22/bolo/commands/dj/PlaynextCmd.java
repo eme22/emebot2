@@ -1,5 +1,8 @@
 package com.eme22.bolo.commands.dj;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
+
 import jakarta.inject.Named;
 
 import com.eme22.bolo.Bot;
@@ -25,6 +28,8 @@ import jakarta.inject.Singleton;
 
 @Singleton
 @Log4j2
+@Transactional
+@ActivateRequestContext
 public class PlaynextCmd extends DJCommand {
    @ConfigProperty(name = "config.loading")
    private String loadingEmoji;
@@ -161,6 +166,11 @@ public class PlaynextCmd extends DJCommand {
         }
    }
 }
+
+
+
+
+
 
 
 

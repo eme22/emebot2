@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.owner;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import com.eme22.bolo.Bot;
 import com.eme22.bolo.commands.OwnerCommand;
 import com.eme22.bolo.model.Server;
@@ -13,6 +15,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class AutoplaylistCmd extends OwnerCommand {
    private final Bot bot;
    @ConfigProperty(name = "config.aliases.autoplaylist", defaultValue = "")
@@ -27,7 +31,7 @@ public class AutoplaylistCmd extends OwnerCommand {
       this.options = Collections.singletonList(new OptionData(OptionType.STRING, "playlist", "Selecciona una playlist predefinida").setRequired(true));
    }
 
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       String playlist = (String)event.getOption("playlist", OptionMapping::getAsString);
       if (playlist == null) {
          event.reply(event.getClient().getError() + " No hay playlist seleccionada!!").queue();
@@ -68,5 +72,13 @@ public class AutoplaylistCmd extends OwnerCommand {
       }
    }
 }
+
+
+
+
+
+
+
+
 
 

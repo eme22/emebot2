@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.dj;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.inject.Named;
 
 import com.eme22.bolo.Bot;
@@ -18,6 +20,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class RepeatCmd extends DJCommand {
    @ConfigProperty(name = "config.aliases.repeat", defaultValue = "")
    String[] aliases = new String[0];
@@ -32,7 +36,7 @@ public class RepeatCmd extends DJCommand {
    }
 
    @Override
-   protected void execute(CommandEvent event) {
+   public void execute(CommandEvent event) {
       String args = event.getArgs();
       Server settings = (Server)event.getClient().getSettingsFor(event.getGuild());
       RepeatMode value;
@@ -61,7 +65,7 @@ public class RepeatCmd extends DJCommand {
    }
 
    @Override
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       OptionMapping option = event.getOption("modo");
       Server settings = (Server)event.getClient().getSettingsFor(event.getGuild());
       String args = null;
@@ -102,6 +106,14 @@ public class RepeatCmd extends DJCommand {
    public void doCommand(SlashCommandEvent event) {
    }
 }
+
+
+
+
+
+
+
+
 
 
 

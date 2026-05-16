@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.admin;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import com.eme22.bolo.Bot;
 import com.eme22.bolo.language.LanguageService;
 import com.jagrosh.jdautilities.command.MessageContextMenu;
@@ -19,6 +21,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class AddLinkEnhancerFromMessageCmd extends MessageContextMenu {
 
     private final Bot bot;
@@ -39,7 +43,7 @@ public class AddLinkEnhancerFromMessageCmd extends MessageContextMenu {
     }
 
     @Override
-    protected void execute(MessageContextMenuEvent event) {
+    public void execute(MessageContextMenuEvent event) {
         LanguageService lang = this.bot.getSettingsManager().getLanguageService(event.getGuild());
         String content = event.getTarget().getContentRaw();
 
@@ -104,3 +108,11 @@ public class AddLinkEnhancerFromMessageCmd extends MessageContextMenu {
         return "";
     }
 }
+
+
+
+
+
+
+
+

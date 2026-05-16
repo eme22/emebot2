@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.admin;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.inject.Named;
 
 import com.eme22.bolo.Bot;
@@ -20,6 +22,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class PollCmd extends AdminCommand {
 
    @ConfigProperty(name = "config.aliases.poll", defaultValue = "")
@@ -45,7 +49,7 @@ public class PollCmd extends AdminCommand {
       );
    }
 
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       OptionMapping questionOption = event.getOption("pregunta");
       MessagePollBuilder pollBuilder = new MessagePollBuilder(questionOption.getAsString());
 
@@ -68,7 +72,7 @@ public class PollCmd extends AdminCommand {
          );
    }
 
-   protected void execute(CommandEvent event) {
+   public void execute(CommandEvent event) {
       if (event.getArgs().isEmpty()) {
          event.reply(event.getClient().getError() + " Por favor incluya al menos una Pregunta y 2 respuestas en la pregunta");
       } else {
@@ -98,6 +102,14 @@ public class PollCmd extends AdminCommand {
       }
    }
 }
+
+
+
+
+
+
+
+
 
 
 

@@ -3,7 +3,6 @@ package com.eme22.bolo.birthday;
 import jakarta.inject.Inject;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import io.quarkus.runtime.annotations.RegisterForReflection;
 
 import com.eme22.bolo.Bot;
 import com.eme22.bolo.model.Birthday;
@@ -21,8 +20,8 @@ import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import org.jetbrains.annotations.NotNull;
+
 @ApplicationScoped
-@RegisterForReflection
 public class BirthdayManager {
    private final BirthdayRepository birthDayRepository;
    private final Map<Long, ArrayList<Birthday>> scheduledBirthDays = new HashMap<>();

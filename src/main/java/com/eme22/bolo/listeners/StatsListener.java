@@ -10,10 +10,9 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
-import io.quarkus.runtime.annotations.RegisterForReflection;
+
 
 @ApplicationScoped
-@RegisterForReflection(methods = true)
 public class StatsListener implements CommandListener {
    private final StatsService statsService;
 

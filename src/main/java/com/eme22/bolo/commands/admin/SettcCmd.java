@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.admin;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.inject.Named;
 
 import com.eme22.bolo.commands.AdminCommand;
@@ -20,6 +22,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class SettcCmd extends AdminCommand {
    @ConfigProperty(name = "config.aliases.settc", defaultValue = "")
    String[] aliases = new String[0];
@@ -32,7 +36,7 @@ public class SettcCmd extends AdminCommand {
       this.options = Collections.singletonList(new OptionData(OptionType.CHANNEL, "canal", "canal a poner para solo comandos de musica.").setRequired(false));
    }
 
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       OptionMapping option = event.getOption("canal");
       TextChannel channel = null;
       Server s = (Server)event.getClient().getSettingsFor(event.getGuild());
@@ -55,7 +59,7 @@ public class SettcCmd extends AdminCommand {
       }
    }
 
-   protected void execute(CommandEvent event) {
+   public void execute(CommandEvent event) {
       if (event.getArgs().isEmpty()) {
          event.replyError(" Por favor, incluya un canal de texto o NONE");
       } else {
@@ -79,6 +83,14 @@ public class SettcCmd extends AdminCommand {
       }
    }
 }
+
+
+
+
+
+
+
+
 
 
 

@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.admin;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.inject.Named;
 
 import com.eme22.bolo.commands.AdminCommand;
@@ -19,6 +21,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class AddMemeCmd extends AdminCommand {
    @ConfigProperty(name = "config.aliases.addmeme", defaultValue = "")
    String[] aliases = new String[0];
@@ -34,7 +38,7 @@ public class AddMemeCmd extends AdminCommand {
       );
    }
 
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       String message = Objects.requireNonNull(event.getOption("meme")).getAsString();
       String link = Objects.requireNonNull(event.getOption("link")).getAsString();
 
@@ -51,7 +55,7 @@ public class AddMemeCmd extends AdminCommand {
       event.reply(event.getClient().getSuccess() + " Imagen " + link + " Agregada a la lista de memes").setEphemeral(true).queue();
    }
 
-   protected void execute(CommandEvent event) {
+   public void execute(CommandEvent event) {
       String link = null;
       if (event.getArgs().isEmpty()) {
          List<Attachment> attachmentList = event.getMessage().getAttachments();
@@ -85,6 +89,14 @@ public class AddMemeCmd extends AdminCommand {
       event.reply(event.getClient().getSuccess() + " Imagen " + link + " Agregada a la lista de memes");
    }
 }
+
+
+
+
+
+
+
+
 
 
 

@@ -26,7 +26,6 @@ import java.util.Set;
 import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import lombok.Generated;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
@@ -37,6 +36,7 @@ import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.entities.channel.concrete.VoiceChannel;
 import net.dv8tion.jda.api.entities.emoji.Emoji;
+import net.dv8tion.jda.api.events.GenericEvent;
 import net.dv8tion.jda.api.events.guild.GuildJoinEvent;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent;
@@ -48,7 +48,7 @@ import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
 import net.dv8tion.jda.api.events.message.react.MessageReactionRemoveEvent;
 import net.dv8tion.jda.api.events.session.ReadyEvent;
 import net.dv8tion.jda.api.events.session.ShutdownEvent;
-import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.hooks.EventListener;
 import net.dv8tion.jda.api.requests.restaction.MessageCreateAction;
 import net.dv8tion.jda.api.utils.FileUpload;
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
@@ -60,12 +60,11 @@ import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.enterprise.context.control.ActivateRequestContext;
 
-import io.quarkus.runtime.annotations.RegisterForReflection;
+
 
 @ApplicationScoped
-@RegisterForReflection(methods = true)
 @Slf4j
-public class Listener extends ListenerAdapter {
+public class Listener implements EventListener {
    
    private final Bot bot;
    @ConfigProperty(name = "config.update")
@@ -91,6 +90,24 @@ public class Listener extends ListenerAdapter {
    private static String getDefaultCharSet() {
       OutputStreamWriter writer = new OutputStreamWriter(new ByteArrayOutputStream());
       return writer.getEncoding();
+   }
+
+   @Override
+   public void onEvent(@NotNull GenericEvent event) {
+      switch (event) {
+         case ReadyEvent readyEvent -> this.onReady(readyEvent);
+         case MessageReceivedEvent messageReceivedEvent -> this.onMessageReceived(messageReceivedEvent);
+         case MessageDeleteEvent messageDeleteEvent -> this.onMessageDelete(messageDeleteEvent);
+         case GuildVoiceUpdateEvent guildVoiceUpdateEvent -> this.onGuildVoiceUpdate(guildVoiceUpdateEvent);
+         case ShutdownEvent shutdownEvent -> this.onShutdown(shutdownEvent);
+         case GuildJoinEvent guildJoinEvent -> this.onGuildJoin(guildJoinEvent);
+         case MessageReactionAddEvent messageReactionAddEvent -> this.onMessageReactionAdd(messageReactionAddEvent);
+         case MessageReactionRemoveEvent messageReactionRemoveEvent -> this.onMessageReactionRemove(messageReactionRemoveEvent);
+         case ButtonInteractionEvent buttonInteractionEvent -> this.onButtonInteraction(buttonInteractionEvent);
+         case GuildMemberJoinEvent guildMemberJoinEvent -> this.onGuildMemberJoin(guildMemberJoinEvent);
+         case GuildMemberRemoveEvent guildMemberRemoveEvent -> this.onGuildMemberRemove(guildMemberRemoveEvent);
+         default -> {}
+      }
    }
 
    @ActivateRequestContext
@@ -176,14 +193,20 @@ public class Listener extends ListenerAdapter {
       }
    }
 
+   @ActivateRequestContext
+   @Transactional
    public void onGuildVoiceUpdate(@NotNull GuildVoiceUpdateEvent event) {
       this.bot.getAloneInVoiceHandler().onVoiceUpdate(event);
    }
 
+   @ActivateRequestContext
+   @Transactional
    public void onShutdown(@NotNull ShutdownEvent event) {
       this.bot.shutdown();
    }
 
+   @ActivateRequestContext
+   @Transactional
    public void onGuildJoin(GuildJoinEvent event) {
       EmbedBuilder embedBuilder = new EmbedBuilder();
       embedBuilder.setDescription("¿Desea configurar el bot?");
@@ -368,6 +391,8 @@ public class Listener extends ListenerAdapter {
       return result;
    }
 
+   @ActivateRequestContext
+   @Transactional
    public void onButtonInteraction(@NotNull ButtonInteractionEvent event) {
       String id = event.getComponentId();
       switch (id) {
@@ -390,20 +415,32 @@ public class Listener extends ListenerAdapter {
    public void onGuildMemberJoin(@NotNull GuildMemberJoinEvent event) {
       Guild guild = event.getGuild();
       User member = event.getMember().getUser();
+      log.info("onGuildMemberJoin triggered for user: {} ({}) in guild: {}", member.getName(), member.getId(), guild.getName());
 
       try {
          if (!this.bot.getSettingsManager().getSettings(guild).getBienvenidasChannelEnabled()) {
+            log.info("Welcome messages are disabled for guild: {}", guild.getName());
             return;
          }
 
-         TextChannel bienvenidas = guild.getTextChannelById(this.bot.getSettingsManager().getSettings(guild).getBienvenidasChannelId());
+         long channelId = this.bot.getSettingsManager().getSettings(guild).getBienvenidasChannelId();
+         TextChannel bienvenidas = guild.getTextChannelById(channelId);
          if (bienvenidas != null) {
+            log.info("Found welcome channel: {} ({})", bienvenidas.getName(), channelId);
             InputStream bienvenida = OtherUtil.getBackground(this.bot.getSettingsManager().getSettings(guild), true, this.clientToken);
             String userImage = this.getUserImage(member);
             File converted = this.getMemberFile(member);
-            OtherUtil.createImage("BIENVENIDO", member.getName(), member.getId(), bienvenida, userImage, converted, this.clientToken);
+            log.info("Generating welcome image for user: {}", member.getName());
+            try {
+                OtherUtil.createImage("BIENVENIDO", member.getName(), member.getId(), bienvenida, userImage, converted, this.clientToken);
+            } catch (Exception e) {
+                log.error("Failed to generate welcome image: " + e.getMessage(), e);
+            }
+
             if (!converted.exists()) {
-               log.error("Image not created");
+               log.error("Image not created at path: {}", converted.getAbsolutePath());
+            } else {
+               log.info("Image successfully created at path: {}", converted.getAbsolutePath());
             }
 
             String message = OtherUtil.getMessage(this.bot, guild, true);
@@ -411,10 +448,13 @@ public class Listener extends ListenerAdapter {
                message = "Un bot ha llegado";
             }
 
+            log.info("Sending welcome message to channel: {}", bienvenidas.getName());
             this.sendMessage(guild, member, bienvenidas, converted, message);
+         } else {
+            log.error("Welcome channel not found for ID: {}", channelId);
          }
       } catch (Exception var9) {
-         log.error("Error: " + var9.getMessage(), var9);
+         log.error("Error in onGuildMemberJoin: " + var9.getMessage(), var9);
       }
    }
 
@@ -434,56 +474,99 @@ public class Listener extends ListenerAdapter {
    public void onGuildMemberRemove(@NotNull GuildMemberRemoveEvent event) {
       Guild guild = event.getGuild();
       User member = event.getMember().getUser();
+      log.info("onGuildMemberRemove triggered for user: {} ({}) in guild: {}", member.getName(), member.getId(), guild.getName());
 
       try {
          if (!this.bot.getSettingsManager().getSettings(guild).getDespedidasChannelEnabled()) {
+            log.info("Farewell messages are disabled for guild: {}", guild.getName());
             return;
          }
 
-         TextChannel despedidas = guild.getTextChannelById(this.bot.getSettingsManager().getSettings(guild).getDespedidasChannelId());
+         long channelId = this.bot.getSettingsManager().getSettings(guild).getDespedidasChannelId();
+         TextChannel despedidas = guild.getTextChannelById(channelId);
          if (despedidas != null) {
+            log.info("Found farewell channel: {} ({})", despedidas.getName(), channelId);
             InputStream despedida = OtherUtil.getBackground(this.bot.getSettingsManager().getSettings(guild), false, this.clientToken);
             String userImage = this.getUserImage(member);
             File converted = this.getMemberFile(member);
-            OtherUtil.createImage("SE VA", member.getName(), member.getId(), despedida, userImage, converted, this.clientToken);
+            log.info("Generating farewell image for user: {}", member.getName());
+            try {
+                OtherUtil.createImage("SE VA", member.getName(), member.getId(), despedida, userImage, converted, this.clientToken);
+            } catch (Exception e) {
+                log.error("Failed to generate farewell image: " + e.getMessage(), e);
+            }
+
             if (!converted.exists()) {
-               log.error("Image not created");
+               log.error("Image not created at path: {}", converted.getAbsolutePath());
+            } else {
+               log.info("Image successfully created at path: {}", converted.getAbsolutePath());
             }
 
             String message = OtherUtil.getMessage(this.bot, guild, false);
+            log.info("Sending farewell message to channel: {}", despedidas.getName());
             this.sendMessage(guild, member, despedidas, converted, message);
+         } else {
+            log.error("Farewell channel not found for ID: {}", channelId);
          }
       } catch (Exception var9) {
-         log.error("Error: " + var9.getMessage(), var9);
+         log.error("Error in onGuildMemberRemove: " + var9.getMessage(), var9);
       }
    }
 
-   private void sendMessage(Guild guild, User member, TextChannel despedidas, File converted, String message) {
-      if (message == null) {
-         message = "";
+   private void sendMessage(Guild guild, User member, TextChannel channel, File converted, String message) {
+      if (message == null || message.trim().isEmpty()) {
+         message = member.getName() + " " + (converted.exists() ? "" : "ha llegado/se ha ido");
       }
 
       message = message.replaceAll("@username", member.getAsMention())
          .replaceAll("@servername", guild.getName())
-         .replaceAll("@channel", despedidas.getAsMention());
-      ((MessageCreateAction)despedidas.sendMessage(message).addFiles(new FileUpload[]{FileUpload.fromData(converted)})).queue(sucess -> {
-         this.statsService.updateImagesSend(sucess.getGuild().getIdLong());
-         if (converted.delete()) {
-            log.error("Image deleted from memory after succes sended");
-         }
-      });
+         .replaceAll("@channel", channel.getAsMention());
+      
+      if (message.trim().isEmpty()) {
+          message = member.getAsMention();
+      }
+      
+      if (converted.exists()) {
+          log.info("Attempting to send image file: {} to channel: {}", converted.getName(), channel.getName());
+          ((MessageCreateAction)channel.sendMessage(message).addFiles(new FileUpload[]{FileUpload.fromData(converted)})).queue(success -> {
+             log.info("Message successfully sent to channel: {}", channel.getName());
+             this.statsService.updateImagesSend(success.getGuild().getIdLong());
+             if (converted.delete()) {
+                log.info("Temporary image file deleted: {}", converted.getName());
+             } else {
+                log.warn("Failed to delete temporary image file: {}", converted.getName());
+             }
+          }, throwable -> {
+             log.error("Failed to send welcome/farewell message: " + throwable.getMessage(), throwable);
+          });
+      } else {
+          log.warn("Image file not found, sending text only message: {}", converted.getAbsolutePath());
+          channel.sendMessage(message).queue(success -> {
+              log.info("Text-only message successfully sent to channel: {}", channel.getName());
+          }, throwable -> {
+              log.error("Failed to send text-only welcome/farewell message: " + throwable.getMessage(), throwable);
+          });
+      }
    }
 
    @NotNull
    private File getMemberFile(User member) {
-      File parent = new File("temp");
-      if (!parent.exists() && parent.mkdirs()) {
-         log.error("Temp folder successfully created");
+      File parent = new File(System.getProperty("java.io.tmpdir"), "emebot-temp").getAbsoluteFile();
+      if (!parent.exists()) {
+         if (parent.mkdirs()) {
+            log.info("Temp folder successfully created: {}", parent.getAbsolutePath());
+         } else {
+            log.error("Failed to create temp folder: {}", parent.getAbsolutePath());
+         }
       }
 
       File converted = new File(parent, member.getId() + ".png");
-      if (converted.delete()) {
-         log.error("Image deleted from memory before new image");
+      if (converted.exists()) {
+         if (converted.delete()) {
+            log.info("Existing temporary image file deleted: {}", converted.getName());
+         } else {
+            log.warn("Failed to delete existing temporary image file: {}", converted.getName());
+         }
       }
 
       return converted;

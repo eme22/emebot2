@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.general;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import com.eme22.bolo.Bot;
 import com.eme22.bolo.commands.BaseCommand;
 import com.eme22.bolo.language.LanguageService;
@@ -20,6 +22,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class AvatarCmd extends BaseCommand {
    private final StatsService statsService;
    private final Bot bot;
@@ -36,7 +40,7 @@ public class AvatarCmd extends BaseCommand {
       this.options = Collections.singletonList(new OptionData(OptionType.USER, "usuario", "Seleccione al usuario al que ver su avatar.").setRequired(true));
    }
 
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       LanguageService languageService = this.bot.getSettingsManager().getLanguageService(event.getGuild());
       OptionMapping option = event.getOption("usuario");
       User user = option.getAsUser();
@@ -44,7 +48,7 @@ public class AvatarCmd extends BaseCommand {
       OtherUtil.sendAvatar(event, user, member, this.statsService, languageService, this.bot);
    }
 
-   protected void execute(CommandEvent event) {
+   public void execute(CommandEvent event) {
       LanguageService languageService = this.bot.getSettingsManager().getLanguageService(event.getGuild());
       if (event.getArgs().isEmpty()) {
          event.replyError(languageService.getMessage("command.avatar.name.empty"));
@@ -68,5 +72,13 @@ public class AvatarCmd extends BaseCommand {
       }
    }
 }
+
+
+
+
+
+
+
+
 
 

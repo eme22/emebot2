@@ -1,5 +1,7 @@
 package com.eme22.bolo.commands.admin;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.inject.Named;
 
 import com.eme22.bolo.commands.AdminCommand;
@@ -15,6 +17,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class DeleteEightBallAnswer extends AdminCommand {
    @ConfigProperty(name = "config.aliases.del8ballanswer", defaultValue = "")
    String[] aliases = new String[0];
@@ -27,7 +31,7 @@ public class DeleteEightBallAnswer extends AdminCommand {
       this.options = Collections.singletonList(new OptionData(OptionType.INTEGER, "posicion", "respuesta que vas a borrar").setRequired(true));
    }
 
-   protected void execute(SlashCommandEvent event) {
+   public void execute(SlashCommandEvent event) {
       Server settings = (Server)event.getClient().getSettingsFor(event.getGuild());
       Integer answer = (Integer)event.getOption("posicion", OptionMapping::getAsInt);
       if (answer != null && answer < settings.getEightBallAnswers().size()) {
@@ -39,7 +43,7 @@ public class DeleteEightBallAnswer extends AdminCommand {
       }
    }
 
-   protected void execute(CommandEvent event) {
+   public void execute(CommandEvent event) {
       Server settings = (Server)event.getClient().getSettingsFor(event.getGuild());
       int answer = Integer.parseInt(event.getArgs());
       if (answer >= settings.getEightBallAnswers().size()) {
@@ -51,6 +55,14 @@ public class DeleteEightBallAnswer extends AdminCommand {
       }
    }
 }
+
+
+
+
+
+
+
+
 
 
 

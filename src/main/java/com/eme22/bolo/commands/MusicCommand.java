@@ -1,5 +1,8 @@
 package com.eme22.bolo.commands;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
+
 import com.eme22.bolo.Bot;
 import com.eme22.bolo.language.LanguageService;
 import com.eme22.bolo.model.Server;
@@ -12,7 +15,8 @@ import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.exceptions.PermissionException;
 import jakarta.inject.Inject;
-
+@Transactional
+@ActivateRequestContext
 public abstract class MusicCommand extends BaseCommand {
    protected final Bot bot;
    protected boolean bePlaying;
@@ -25,7 +29,8 @@ public abstract class MusicCommand extends BaseCommand {
       this.category = new Category("Music");
    }
 
-   protected void execute(CommandEvent event) {
+   @Override
+   public void execute(CommandEvent event) {
       Server settings = (Server)event.getClient().getSettingsFor(event.getGuild());
       LanguageService lang = this.bot.getSettingsManager().getLanguageService(event.getGuild().getIdLong());
       TextChannel tchannel = event.getGuild().getTextChannelById(settings.getTextChannelId());
@@ -48,7 +53,8 @@ public abstract class MusicCommand extends BaseCommand {
       }
    }
 
-   protected void execute(SlashCommandEvent event) {
+   @Override
+   public void execute(SlashCommandEvent event) {
       Server settings = (Server)event.getClient().getSettingsFor(event.getGuild());
       LanguageService lang = this.bot.getSettingsManager().getLanguageService(event.getGuild().getIdLong());
       TextChannel tchannel = event.getGuild().getTextChannelById(settings.getTextChannelId());
@@ -71,7 +77,7 @@ public abstract class MusicCommand extends BaseCommand {
       }
    }
 
-   private boolean isTextChannelAllowed(CommandEvent event, TextChannel tchannel, LanguageService lang) {
+   public boolean isTextChannelAllowed(CommandEvent event, TextChannel tchannel, LanguageService lang) {
       if (tchannel == null) {
          return true;
       } else if (!event.getTextChannel().getId().equals(tchannel.getId())) {
@@ -83,7 +89,7 @@ public abstract class MusicCommand extends BaseCommand {
       }
    }
 
-   protected boolean isTextChannelAllowed(SlashCommandEvent event, TextChannel tchannel, LanguageService lang) {
+   public boolean isTextChannelAllowed(SlashCommandEvent event, TextChannel tchannel, LanguageService lang) {
       if (tchannel == null) {
          return true;
       } else if (!event.getTextChannel().getId().equals(tchannel.getId())) {
@@ -96,7 +102,7 @@ public abstract class MusicCommand extends BaseCommand {
       }
    }
 
-   private boolean isMusicPlaying(CommandEvent event, LanguageService lang) {
+   public boolean isMusicPlaying(CommandEvent event, LanguageService lang) {
       if (!this.bot.getPlayerManager().getAudioHandler(event.getGuild().getIdLong()).isMusicPlaying(event.getJDA())) {
          event.reply(lang.getMessage("command.music.playing.none", new Object[]{event.getClient().getError()}));
          return false;
@@ -105,7 +111,7 @@ public abstract class MusicCommand extends BaseCommand {
       }
    }
 
-   protected boolean isMusicPlaying(SlashCommandEvent event, LanguageService lang) {
+   public boolean isMusicPlaying(SlashCommandEvent event, LanguageService lang) {
       if (!this.bot.getPlayerManager().getAudioHandler(event.getGuild()).isMusicPlaying(event.getJDA())) {
          event.reply(lang.getMessage("command.music.playing.none", new Object[]{event.getClient().getError()})).setEphemeral(true).queue();
          return false;
@@ -178,11 +184,16 @@ public abstract class MusicCommand extends BaseCommand {
 
    public abstract void doCommand(SlashCommandEvent event);
 
-   protected boolean shouldConnect(CommandEvent event) {
+   public boolean shouldConnect(CommandEvent event) {
       return true;
    }
 
-   protected boolean shouldConnect(SlashCommandEvent event) {
+   public boolean shouldConnect(SlashCommandEvent event) {
       return true;
    }
 }
+
+
+
+
+

@@ -1,5 +1,8 @@
 package com.eme22.bolo.commands.music;
 
+import jakarta.transaction.Transactional;
+import jakarta.enterprise.context.control.ActivateRequestContext;
+
 import com.eme22.bolo.Bot;
 import com.eme22.bolo.audio.AudioHandler;
 import com.eme22.bolo.commands.MusicCommand;
@@ -23,6 +26,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
+@Transactional
+@ActivateRequestContext
 public class LyricsCmd extends MusicCommand {
    @ConfigProperty(name = "config.aliases.lyrics", defaultValue = "")
    String[] aliases = new String[0];
@@ -191,5 +196,10 @@ public class LyricsCmd extends MusicCommand {
       }
    }
 }
+
+
+
+
+
 
 
