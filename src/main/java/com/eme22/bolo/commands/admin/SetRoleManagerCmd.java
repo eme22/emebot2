@@ -101,15 +101,13 @@ public class SetRoleManagerCmd extends AdminCommand {
                manager.setEmoji(map);
                manager.setToggled(toggled);
 
-               try {
-                  Server server = this.bot.getSettingsManager().getSettings(event.getGuild().getIdLong());
-                  server.addToRoleManagers(manager);
-                  server.persist();
-               } catch (Exception var10) {
-                  success.delete().queue();
-                  event.reply(event.getClient().getError() + " Error al guardar el administrador de roles: " + var10.getMessage()).setEphemeral(true).queue();
-                  return;
-               }
+                try {
+                   this.bot.getSettingsManager().addRoleManagerToServer(event.getGuild().getIdLong(), manager);
+                } catch (Exception var10) {
+                   success.delete().queue();
+                   event.reply(event.getClient().getError() + " Error al guardar el administrador de roles: " + var10.getMessage()).setEphemeral(true).queue();
+                   return;
+                }
 
                event.reply(event.getClient().getSuccess() + " ¡Administrador de roles creado con éxito!").setEphemeral(true).queue();
             });
@@ -166,15 +164,13 @@ public class SetRoleManagerCmd extends AdminCommand {
                   manager.setEmoji(map);
                   manager.setToggled(false);
 
-                  try {
-                     Server server = this.bot.getSettingsManager().getSettings(event.getGuild().getIdLong());
-                     server.addToRoleManagers(manager);
-                     server.persist();
-                  } catch (Exception var7) {
-                     success.delete().queue();
-                     event.replyError(" Error al guardar el administrador de roles: " + var7.getMessage());
-                     return;
-                  }
+                   try {
+                      this.bot.getSettingsManager().addRoleManagerToServer(event.getGuild().getIdLong(), manager);
+                   } catch (Exception var7) {
+                      success.delete().queue();
+                      event.replyError(" Error al guardar el administrador de roles: " + var7.getMessage());
+                      return;
+                   }
 
                   event.getMessage().delete().queue();
                });

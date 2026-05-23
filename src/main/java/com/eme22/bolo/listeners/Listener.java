@@ -6,11 +6,9 @@ import lombok.extern.slf4j.Slf4j;
 import com.eme22.bolo.Bot;
 import com.eme22.bolo.configuration.BotConfiguration;
 import com.eme22.bolo.model.MusicArtWork;
-import com.eme22.bolo.model.RoleManager;
 import com.eme22.bolo.model.Server;
 import com.eme22.bolo.stats.StatsService;
 import com.eme22.bolo.utils.OtherUtil;
-import com.jagrosh.jdautilities.commons.utils.FinderUtil;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.InputStream;
@@ -30,8 +28,6 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
-import net.dv8tion.jda.api.entities.MessageReaction;
-import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.entities.channel.concrete.VoiceChannel;
@@ -185,13 +181,23 @@ public class Listener implements EventListener {
       }
    }
 
-   @ActivateRequestContext
-   @Transactional
-   public void onMessageDelete(MessageDeleteEvent event) {
-      if (event.isFromGuild()) {
-         this.bot.getPlayerManager().getNowplayingHandler().onMessageDelete(event.getGuild(), event.getMessageIdLong());
-      }
-   }
+    @ActivateRequestContext
+    @Transactional
+    public void onMessageDelete(MessageDeleteEvent event) {
+       if (event.isFromGuild()) {
+          this.bot.getPlayerManager().getNowplayingHandler().onMessageDelete(event.getGuild(), event.getMessageIdLong());
+          try {
+             Server server = this.bot.getSettingsManager().getSettings(event.getGuild().getIdLong());
+             if (server.getRoleManager(event.getMessageIdLong()) != null) {
+                server.deleteRoleManagers(event.getMessageIdLong());
+                server.persist();
+                log.info("Cleared deleted role manager message {} on server {}", event.getMessageIdLong(), event.getGuild().getIdLong());
+             }
+          } catch (Exception e) {
+             log.error("Error clearing deleted role manager message", e);
+          }
+       }
+    }
 
    @ActivateRequestContext
    @Transactional
