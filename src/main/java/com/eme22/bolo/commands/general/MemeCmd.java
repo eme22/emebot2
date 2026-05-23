@@ -62,8 +62,8 @@ public class MemeCmd extends BaseCommand {
       messageCreateBuilder.addContent(data.getMessage());
       messageCreateBuilder.setEmbeds(new MessageEmbed[]{eb.build()});
       event.reply(messageCreateBuilder.build()).queue(success -> {
-         this.statsService.updateImagesSend(event.getGuild().getIdLong());
-         this.statsService.updateMemesSend(event.getGuild().getIdLong());
+         this.statsService.increment(event.getGuild().getIdLong(), "IMAGES_SEND");
+         this.statsService.increment(event.getGuild().getIdLong(), "MEMES_SEND");
       });
    }
 
@@ -93,8 +93,8 @@ public class MemeCmd extends BaseCommand {
       messageCreateBuilder.addContent(data.getMessage());
       messageCreateBuilder.setEmbeds(new MessageEmbed[]{eb.build()});
       event.reply(messageCreateBuilder.build(), success -> {
-         this.statsService.updateImagesSend(event.getGuild().getIdLong());
-         this.statsService.updateMemesSend(event.getGuild().getIdLong());
+         this.statsService.increment(event.getGuild().getIdLong(), "IMAGES_SEND");
+         this.statsService.increment(event.getGuild().getIdLong(), "MEMES_SEND");
       });
       event.getMessage().delete().queue();
    }

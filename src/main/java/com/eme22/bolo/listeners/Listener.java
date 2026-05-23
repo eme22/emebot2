@@ -527,10 +527,9 @@ public class Listener implements EventListener {
       }
       
       if (converted.exists()) {
-          log.info("Attempting to send image file: {} to channel: {}", converted.getName(), channel.getName());
           ((MessageCreateAction)channel.sendMessage(message).addFiles(new FileUpload[]{FileUpload.fromData(converted)})).queue(success -> {
              log.info("Message successfully sent to channel: {}", channel.getName());
-             this.statsService.updateImagesSend(success.getGuild().getIdLong());
+             this.statsService.increment(success.getGuild().getIdLong(), "IMAGES_SEND");
              if (converted.delete()) {
                 log.info("Temporary image file deleted: {}", converted.getName());
              } else {

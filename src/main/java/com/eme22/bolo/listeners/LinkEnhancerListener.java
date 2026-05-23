@@ -11,8 +11,9 @@ import com.eme22.bolo.stats.StatsService;
 import java.util.List;
 import java.util.regex.Pattern;
 import lombok.Generated;
+import net.dv8tion.jda.api.events.GenericEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
-import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.hooks.EventListener;
 import org.jetbrains.annotations.NotNull;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -23,7 +24,7 @@ import jakarta.enterprise.context.control.ActivateRequestContext;
 
 @ApplicationScoped
 @Slf4j
-public class LinkEnhancerListener extends ListenerAdapter {
+public class LinkEnhancerListener implements EventListener {
    
    private final Bot bot;
    @ConfigProperty(name = "config.update")
@@ -42,6 +43,14 @@ public class LinkEnhancerListener extends ListenerAdapter {
    public LinkEnhancerListener(Bot bot, StatsService statsService) {
       this.bot = bot;
       this.statsService = statsService;
+   }
+
+   @Override
+   public void onEvent(@NotNull GenericEvent event) {
+      switch (event) {
+         case MessageReceivedEvent messageReceivedEvent -> this.onMessageReceived(messageReceivedEvent);
+         default -> {}
+      }
    }
 
    @ActivateRequestContext

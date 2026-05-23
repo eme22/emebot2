@@ -12,6 +12,7 @@ import com.eme22.bolo.model.Server;
 import com.eme22.bolo.stats.StatsService;
 import com.eme22.discordcdn.Discord;
 import com.eme22.discordcdn.model.RefreshedUrl;
+import com.eme22.discordcdn.model.RefreshUrlsRes;
 import com.jagrosh.jdautilities.command.CommandEvent;
 import com.jagrosh.jlyrics.Lyrics;
 import com.jagrosh.jlyrics.LyricsClient;
@@ -157,10 +158,21 @@ public class OtherUtil {
             );
             int responseCode = urlConnection.getResponseCode();
             log.info("imageFromUrl: Response code: {}", responseCode);
-            if (responseCode == 404 && url.contains("cdn.discordapp.com")) {
-               log.info("imageFromUrl: 404 from Discord CDN, attempting to refresh link");
-               return imageFromUrl(((RefreshedUrl)new Discord(token).fetchLatestLink(url).getRefreshedUrls().get(0)).getRefreshed(), token);
-            }
+             if (responseCode == 404 && url.contains("cdn.discordapp.com")) {
+                log.info("imageFromUrl: 404 from Discord CDN, attempting to refresh link");
+                try {
+                   RefreshUrlsRes res = new Discord(token).fetchLatestLink(url);
+                   if (res != null && res.getRefreshedUrls() != null && !res.getRefreshedUrls().isEmpty()) {
+                      RefreshedUrl refreshedUrl = res.getRefreshedUrls().get(0);
+                      if (refreshedUrl != null && refreshedUrl.getRefreshed() != null) {
+                         return imageFromUrl(refreshedUrl.getRefreshed(), token);
+                      }
+                   }
+                   log.warn("imageFromUrl: Failed to refresh Discord CDN link, no refreshed URLs found in response");
+                } catch (Exception e) {
+                   log.error("imageFromUrl: Error refreshing Discord CDN link: " + e.getMessage(), e);
+                }
+             }
             return urlConnection.getInputStream();
          } catch (IllegalArgumentException | IOException var5) {
             log.error("imageFromUrl: Error fetching image: " + var5.getMessage(), var5);
@@ -701,11 +713,11 @@ public class OtherUtil {
          Button globalBtn = Button.secondary("avatar:global:" + uniqueId + ":" + user.getId(), languageService.getMessage("command.avatar.button.global"));
          Button serverBtn = Button.secondary("avatar:server:" + uniqueId + ":" + user.getId(), languageService.getMessage("command.avatar.button.server"));
          event.replyEmbeds(eb.build()).setComponents(ActionRow.of(globalBtn, serverBtn)).queue(hook -> {
-            statsService.updateImagesSend(event.getGuild().getIdLong());
+            statsService.increment(event.getGuild().getIdLong(), "IMAGES_SEND");
             waitForAvatarButton(hook, event.getUser().getIdLong(), user, member, languageService, bot, uniqueId);
          });
       } else {
-         event.replyEmbeds(eb.build()).queue(success -> statsService.updateImagesSend(event.getGuild().getIdLong()));
+         event.replyEmbeds(eb.build()).queue(success -> statsService.increment(event.getGuild().getIdLong(), "IMAGES_SEND"));
       }
    }
 
@@ -726,11 +738,11 @@ public class OtherUtil {
          mb.setEmbeds(eb.build());
          mb.setComponents(ActionRow.of(globalBtn, serverBtn));
          event.getChannel().sendMessage(mb.build()).queue(message -> {
-            statsService.updateImagesSend(event.getGuild().getIdLong());
+            statsService.increment(event.getGuild().getIdLong(), "IMAGES_SEND");
             waitForAvatarButton(message, event.getAuthor().getIdLong(), user, member, languageService, bot, uniqueId);
          });
       } else {
-         event.reply(eb.build(), success -> statsService.updateImagesSend(event.getGuild().getIdLong()));
+         event.reply(eb.build(), success -> statsService.increment(event.getGuild().getIdLong(), "IMAGES_SEND"));
       }
    }
 

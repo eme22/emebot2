@@ -4,15 +4,24 @@ import jakarta.transaction.Transactional;
 import jakarta.enterprise.context.control.ActivateRequestContext;
 import com.jagrosh.jdautilities.command.Command;
 import com.jagrosh.jdautilities.command.CommandEvent;
+import com.eme22.bolo.stats.StatsService;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.MessageEmbed;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
+
+@Singleton
 @Transactional
 @ActivateRequestContext
 public class PipilinCmd extends Command {
-   public PipilinCmd() {
+   private final StatsService statsService;
+
+   @Inject
+   public PipilinCmd(StatsService statsService) {
       this.name = "pipilin";
       this.help = "OwO";
       this.nsfwOnly = true;
+      this.statsService = statsService;
    }
 
    public void execute(CommandEvent event) {
@@ -22,16 +31,11 @@ public class PipilinCmd extends Command {
       };
       String pickRandomImage = images[(int)(Math.random() * images.length)];
       EmbedBuilder response = new EmbedBuilder().setImage(pickRandomImage);
-      event.getChannel().sendMessageEmbeds(response.build(), new MessageEmbed[0]).queue();
+      event.getChannel().sendMessageEmbeds(response.build(), new MessageEmbed[0]).queue(success -> {
+         if (event.getGuild() != null) {
+            this.statsService.increment(event.getGuild().getIdLong(), "IMAGES_SEND");
+         }
+      });
       event.getMessage().delete().queue();
    }
 }
-
-
-
-
-
-
-
-
-

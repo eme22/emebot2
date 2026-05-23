@@ -4,9 +4,25 @@ quarkus:
       includes: "messages*.properties,trans.ttf,images/*.png"
     additional-build-args: "-Dlog4j2.disable.jmx=true,-H:IncludeResourceBundles=messages,--initialize-at-run-time=com.neovisionaries.ws.client.Misc\\,net.dv8tion.jda.internal.audio.CryptoAdapter$AbstractAaedAdapter\\,net.dv8tion.jda.internal.requests.restaction.MessageCreateActionImpl\\,org.apache.http.impl.auth.NTLMEngineImpl\\,com.eme22.bolo.nsfw.NSFWStrings\\,io.smallrye.common.ref.References"
   http:
-    port: 8081
+    port: ${SERVER_PORT:8081}
+    host: ${SERVER_IP:0.0.0.0}
+    cors:
+      ~: true
+  quinoa:
+    ui-dir: "web-panel"
+    build-dir: "dist/web-panel/browser"
+    enable-spa-routing: true
 
-jda:
+auth:
+  username: ${WEB_ADMIN_USERNAME:admin}
+  password: ${WEB_ADMIN_PASSWORD:password}
+  jwt-secret: ${JWT_SECRET:super-secret-key-that-should-be-changed-12345678}
+  jwt-issuer: "https://emebot.com"
+
+mp:
+  jwt:
+    verify:
+      issuer: "https://emebot.com"
   token: DISCORD_TOKEN_PLACEHOLDER
   shardId: ${JDA_SHARD_ID:0}
   totalShards: ${JDA_TOTAL_SHARDS:1}

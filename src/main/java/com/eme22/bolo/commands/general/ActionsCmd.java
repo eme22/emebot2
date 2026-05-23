@@ -124,35 +124,31 @@ public abstract class ActionsCmd extends BaseCommand {
       }
    }
 
-   protected class Consumer<T> implements java.util.function.Consumer<T> {
-      @Override
-      public void accept(T success) {
-         if (success instanceof Message) {
-            long guildId = ((Message)success).getGuild().getIdLong();
-            ActionsCmd.this.statsService.updateImagesSend(guildId);
-            updateActionStat(guildId);
-         } else if (success instanceof InteractionHook) {
-            long guildId = ((InteractionHook)success).getInteraction().getGuild().getIdLong();
-            ActionsCmd.this.statsService.updateImagesSend(guildId);
-            updateActionStat(guildId);
+    protected class Consumer<T> implements java.util.function.Consumer<T> {
+       @Override
+       public void accept(T success) {
+          if (success instanceof Message) {
+             long guildId = ((Message)success).getGuild().getIdLong();
+             ActionsCmd.this.statsService.increment(guildId, "IMAGES_SEND");
+             updateActionStat(guildId);
+          } else if (success instanceof InteractionHook) {
+             long guildId = ((InteractionHook)success).getInteraction().getGuild().getIdLong();
+             ActionsCmd.this.statsService.increment(guildId, "IMAGES_SEND");
+             updateActionStat(guildId);
+          }
+       }
+    }
+
+    protected void updateActionStat(long guildId) {
+         switch(this.name.toLowerCase()) {
+             case "kiss": this.statsService.increment(guildId, "KISS"); break;
+             case "slap": this.statsService.increment(guildId, "SLAPS"); break;
+             case "poke": this.statsService.increment(guildId, "POKES"); break;
+             case "bite": this.statsService.increment(guildId, "BITES"); break;
+             case "lick": this.statsService.increment(guildId, "LICKS"); break;
+             case "fuck": this.statsService.increment(guildId, "FUCKS"); break;
+             case "cum": this.statsService.increment(guildId, "CUMS"); break;
+             case "anal": this.statsService.increment(guildId, "ANAL"); break;
          }
-      }
-   }
-
-   protected void updateActionStat(long guildId) {
-        switch(this.name.toLowerCase()) {
-            case "kiss": this.statsService.updateKisses(guildId); break;
-            case "slap": this.statsService.updateSlaps(guildId); break;
-            case "poke": this.statsService.updatePokes(guildId); break;
-            case "bite": this.statsService.updateBites(guildId); break;
-            case "lick": this.statsService.updateLicks(guildId); break;
-            case "fuck": this.statsService.updateFucks(guildId); break;
-            case "cum": this.statsService.updateCums(guildId); break;
-            case "anal": this.statsService.updateAnals(guildId); break;
-        }
-   }
+    }
 }
-
-
-
-

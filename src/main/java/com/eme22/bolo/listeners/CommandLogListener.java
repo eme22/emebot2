@@ -11,6 +11,7 @@ import com.jagrosh.jdautilities.command.CommandEvent;
 import com.jagrosh.jdautilities.command.CommandListener;
 import com.jagrosh.jdautilities.command.SlashCommand;
 import com.jagrosh.jdautilities.command.SlashCommandEvent;
+import com.eme22.bolo.stats.StatsService;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -29,12 +30,14 @@ public class CommandLogListener implements CommandListener {
    
    private final CommandLogRepository repository;
    private final Bot bot;
+   private final StatsService statsService;
    private static String clientName;
 
    @Inject
-   public CommandLogListener(CommandLogRepository repository, Bot bot) {
+   public CommandLogListener(CommandLogRepository repository, Bot bot, StatsService statsService) {
       this.repository = repository;
       this.bot = bot;
+      this.statsService = statsService;
    }
 
    @ActivateRequestContext
@@ -50,6 +53,9 @@ public class CommandLogListener implements CommandListener {
          event.getChannel().getName(),
          LocalDate.now()
       );
+      if (event.getGuild() != null) {
+         this.statsService.increment(event.getGuild().getIdLong(), "COMMANDS_USED");
+      }
       this.repository
          .persist(CommandLog.builder()
                  .command(command.getName())
@@ -76,6 +82,9 @@ public class CommandLogListener implements CommandListener {
          event.getChannel().getName(),
          LocalDate.now()
       );
+      if (event.getGuild() != null) {
+         this.statsService.increment(event.getGuild().getIdLong(), "COMMANDS_USED");
+      }
       this.repository
          .persist(CommandLog.builder()
                  .command(command.getName())

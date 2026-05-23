@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import com.eme22.bolo.commands.BaseCommand;
 import com.eme22.bolo.utils.MemeUtil;
 import com.eme22.bolo.utils.OtherUtil;
+import com.eme22.bolo.stats.StatsService;
 import com.jagrosh.jdautilities.command.CommandEvent;
 import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import java.io.File;
@@ -27,24 +28,29 @@ import net.dv8tion.jda.api.utils.FileUpload;
 
 import org.jetbrains.annotations.NotNull;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 @Slf4j
+@Singleton
 @Transactional
 @ActivateRequestContext
 public class CreateMemeCmd extends BaseCommand {
    @Generated
    
-   @ConfigProperty(name = "config.aliases.creatememe", defaultValue = "")
-   String[] aliases = new String[0];
    @ConfigProperty(name = "config.clientToken", defaultValue = "")
    String clientToken;
+   private final StatsService statsService;
    private MemeUtil memeUtil;
 
-   public CreateMemeCmd() {
+   @Inject
+   public CreateMemeCmd(StatsService statsService, @ConfigProperty(name = "config.aliases.creatememe", defaultValue = "") String[] aliases) {
       this.name = "creatememe";
       this.arguments = "<URL IMAGEN> [TEXTO SUPERIOR] [TEXTO INFERIOR]";
       this.help = "genera un meme desde una imagen";
       this.guildOnly = true;
+      this.statsService = statsService;
+      this.aliases = aliases;
       this.options = Arrays.asList(
          new OptionData(OptionType.STRING, "url", "url de la imagen base.").setRequired(true),
          new OptionData(OptionType.STRING, "superior", "texto superior del meme.").setRequired(true),
@@ -77,7 +83,11 @@ public class CreateMemeCmd extends BaseCommand {
       EmbedBuilder eb = new EmbedBuilder();
       eb.setImage("attachment://tempMeme.png");
       ((ReplyCallbackAction)event.replyEmbeds(eb.build(), new MessageEmbed[0]).addFiles(new FileUpload[]{FileUpload.fromData(image)}))
-         .queue(end -> image.delete());
+         .queue(end -> {
+            this.statsService.increment(event.getGuild().getIdLong(), "IMAGES_SEND");
+            this.statsService.increment(event.getGuild().getIdLong(), "MEMES_SEND");
+            image.delete();
+         });
    }
 
    public void execute(CommandEvent event) {
@@ -115,7 +125,11 @@ public class CreateMemeCmd extends BaseCommand {
             EmbedBuilder eb = new EmbedBuilder();
             eb.setImage("attachment://tempMeme.png");
             ((MessageCreateAction)event.getChannel().sendMessageEmbeds(eb.build(), new MessageEmbed[0]).addFiles(new FileUpload[]{FileUpload.fromData(image)}))
-               .queue(end -> image.delete());
+               .queue(end -> {
+                  this.statsService.increment(event.getGuild().getIdLong(), "IMAGES_SEND");
+                  this.statsService.increment(event.getGuild().getIdLong(), "MEMES_SEND");
+                  image.delete();
+               });
          } else {
             event.replyError(" Por favor incluya al menos un usuario y mensaje");
          }

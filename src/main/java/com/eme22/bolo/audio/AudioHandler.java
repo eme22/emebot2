@@ -184,7 +184,7 @@ public class AudioHandler {
          LanguageService lang = this.playerManager.getBot().getSettingsManager().getLanguageService(this.guildId);
          this.playerManager.getNowplayingHandler().onTrackUpdate(this.guildId, event.getTrack(), this, lang);
          MessageCreateData m = this.getNowPlaying(this.playerManager.getBot().getJDA(), event.getTrack());
-         this.playerManager.getStatsService().updateSongsPlayed(guild.getIdLong());
+         this.playerManager.getStatsService().increment(guild.getIdLong(), "SONGS_PLAYED");
          if (m == null) {
             TextChannel chn = guild.getTextChannelById(this.playerManager.getBot().getSettingsManager().getSettings(guild).getTextChannelId());
             if (chn == null) {

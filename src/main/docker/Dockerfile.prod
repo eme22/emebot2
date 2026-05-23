@@ -8,6 +8,7 @@ USER quarkus
 WORKDIR /code
 RUN ./mvnw dependency:go-offline
 COPY --chown=quarkus:quarkus src /code/src
+COPY --chown=quarkus:quarkus web-panel /code/web-panel
 # Build the native binary
 RUN ./mvnw package -Dnative -Dquarkus.native.container-build=false -DskipTests
 
