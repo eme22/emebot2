@@ -17,6 +17,9 @@ public class RoleManager {
    private Long id;
    @ElementCollection
    @CollectionTable(name = "embot_server_rolemanager_emoji")
+   // En el nuevo sistema de StringSelectMenu, el mapa 'emoji' guarda:
+   // Key: ID del Rol (String)
+   // Value: Mención o ID del Rol
    private Map<String, String> emoji;
    @Column(name = "rolemanager_toggledmode")
    private boolean toggled;

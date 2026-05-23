@@ -327,7 +327,6 @@ public class OtherUtil {
          } catch (Exception var16) {
             log.error("createImage: Error loading user avatar", var16);
          }
-
          if (userAvatar != null) {
             userAvatar = createAvatar(userAvatar);
             log.info("createImage: Avatar processed (rounded)");
@@ -338,15 +337,15 @@ public class OtherUtil {
          Font font2;
          if (is == null) {
             log.warn("createImage: No hay una fuente ttf configurada (trans.ttf not found in resources). Usando fuente del sistema.");
-            font2 = new Font("SansSerif", Font.BOLD, 90);
+            font2 = new Font("SansSerif", Font.BOLD, 75);
          } else {
-            font2 = Font.createFont(Font.TRUETYPE_FONT, is).deriveFont(90.0F);
+            font2 = Font.createFont(Font.TRUETYPE_FONT, is).deriveFont(75.0F);
             log.info("createImage: Font loaded successfully from resources");
          }
-         Font font1 = font2.deriveFont(70.0F);
+         Font font1 = font2.deriveFont(55.0F);
 
          if (userAvatar != null) {
-            backgroundImg = backgroundImg.overlay(userAvatar, 370, 25);
+            backgroundImg = backgroundImg.overlay(userAvatar, 375, 50);
             log.info("createImage: Avatar overlaid on background");
          }
 
@@ -394,13 +393,22 @@ public class OtherUtil {
    }
 
    private static ImmutableImage createAvatar(ImmutableImage image) {
-      int size = 300;
-      ImmutableImage scaled = image.scaleTo(size, size).cover(size, size);
+      int size = 250;
+      int borderWidth = 8;
+      int avatarSize = size - 2 * borderWidth;
+      ImmutableImage scaled = image.scaleTo(avatarSize, avatarSize).cover(avatarSize, avatarSize);
       BufferedImage output = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
       Graphics2D g2 = output.createGraphics();
       g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-      g2.setClip(new RoundRectangle2D.Float(0, 0, size, size, size, size));
-      g2.drawImage(scaled.awt(), 0, 0, null);
+      
+      // Draw white background/border
+      g2.setColor(Color.WHITE);
+      g2.fillOval(0, 0, size, size);
+      
+      // Clip avatar to circle inside the border
+      g2.setClip(new RoundRectangle2D.Float(borderWidth, borderWidth, avatarSize, avatarSize, avatarSize, avatarSize));
+      g2.drawImage(scaled.awt(), borderWidth, borderWidth, null);
+      
       g2.dispose();
       return ImmutableImage.fromAwt(output);
    }

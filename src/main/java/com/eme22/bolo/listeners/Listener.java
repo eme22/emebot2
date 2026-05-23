@@ -286,32 +286,7 @@ public class Listener implements EventListener {
 
                ((Message)event.retrieveMessage().complete()).delete().complete();
             }
-
-            if (!this.tempChannels.containsKey(event.getMessageId())) {
-               RoleManager manager = this.bot.getSettingsManager().getSettings(event.getGuild().getIdLong()).getRoleManager(event.getMessageIdLong());
-               if (manager != null) {
-                  String reaction = event.getReaction().getEmoji().getAsReactionCode();
-                  if (manager.isToggled()) {
-                     List<MessageReaction> reactionsList = ((Message)event.getChannel().asTextChannel().retrieveMessageById(event.getMessageId()).complete())
-                        .getReactions();
-                     reactionsList.forEach(messageReaction -> {
-                        List<User> users = (List<User>)messageReaction.retrieveUsers().complete();
-                        users.forEach(user -> {
-                           if (user.equals(event.getUser()) && !event.getReaction().getEmoji().equals(messageReaction.getEmoji())) {
-                              messageReaction.removeReaction(user).complete();
-                           }
-                        });
-                     });
-                  }
-
-                  Map<String, String> data = manager.getEmoji();
-                  if (data.containsKey(event.getReaction().getEmoji().getAsReactionCode())) {
-                     String roleT = data.get(reaction);
-                     List<Role> list = FinderUtil.findRoles(roleT, event.getGuild());
-                     event.getGuild().addRoleToMember(event.getMember(), list.get(0)).queue();
-                  }
-               }
-            } else {
+            if (this.tempChannels.containsKey(event.getMessageId())) {
                String reactionx = event.getReaction().getEmoji().getName();
                int channel = Integer.parseInt(reactionx.replaceAll("[^\\d.]", ""));
                TextChannel channelId = this.getChannelFromMessage(channel, (Message)event.retrieveMessage().complete());
@@ -352,19 +327,6 @@ public class Listener implements EventListener {
    @ActivateRequestContext
    @Transactional
    public void onMessageReactionRemove(@NotNull MessageReactionRemoveEvent event) {
-      if (!event.getUser().isBot()) {
-         if (event.isFromGuild()) {
-            RoleManager manager = this.bot.getSettingsManager().getSettings(event.getGuild().getIdLong()).getRoleManager(event.getMessageIdLong());
-            if (manager != null) {
-               String reaction = event.getReaction().getEmoji().getAsReactionCode();
-               Map<String, String> datas = manager.getEmoji();
-               if (datas.containsKey(reaction)) {
-                  List<Role> list = FinderUtil.findRoles(datas.get(reaction), event.getGuild());
-                  event.getGuild().removeRoleFromMember(event.getMember(), list.get(0)).complete();
-               }
-            }
-         }
-      }
    }
 
    private TextChannel getChannelFromMessage(int channel, Message message) {

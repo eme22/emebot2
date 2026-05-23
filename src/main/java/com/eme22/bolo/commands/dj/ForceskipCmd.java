@@ -31,47 +31,69 @@ public class ForceskipCmd extends DJCommand {
       this.bePlaying = true;
    }
 
-   @Override
-   public void doCommand(CommandEvent event) {
-      AudioHandler handler = this.bot.getPlayerManager().getAudioHandler(event.getGuild());
-      LanguageService lang = this.bot.getSettingsManager().getLanguageService(event.getGuild());
-      
-      handler.getAudioPlayer().ifPresentOrElse(player -> {
-         RequestMetadata rm = null;
-         try {
-            rm = handler.getRequestMetadata();
-         } catch (IOException var5) {
-            event.replyError(lang.getMessage("command.music.next.error", event.getClient().getError()));
-            return;
-         }
+    @Override
+    public void doCommand(CommandEvent event) {
+       AudioHandler handler = this.bot.getPlayerManager().getAudioHandler(event.getGuild());
+       LanguageService lang = this.bot.getSettingsManager().getLanguageService(event.getGuild());
+       
+       handler.getAudioPlayer().ifPresentOrElse(player -> {
+          if (player.getTrack() == null) {
+             event.replyError(lang.getMessage("music.no.music.playing", "⏹", ""));
+             return;
+          }
+          RequestMetadata rm = null;
+          try {
+             rm = handler.getRequestMetadata();
+          } catch (IOException var5) {
+             event.replyError(lang.getMessage("command.music.next.error", event.getClient().getError()));
+             return;
+          }
 
-         String addedBy = rm.owner() == 0L ? lang.getMessage("command.music.autoplay") : lang.getMessage("command.music.added.by", event.getJDA().getUserById(rm.user().id()).getAsMention());
+          String addedBy;
+          if (rm.owner() == 0L) {
+             addedBy = lang.getMessage("command.music.autoplay");
+          } else {
+             net.dv8tion.jda.api.entities.User user = event.getJDA().getUserById(rm.user().id());
+             String mention = user != null ? user.getAsMention() : (rm.user().username() != null ? "**" + rm.user().username() + "**" : String.valueOf(rm.user().id()));
+             addedBy = lang.getMessage("command.music.added.by", mention);
+          }
 
-         event.reply(lang.getMessage("command.music.skipped", event.getClient().getSuccess(), player.getTrack().getInfo().getTitle(), addedBy, event.getAuthor().getAsMention()));
-         player.stopTrack().subscribe();
-      }, () -> event.replyError(lang.getMessage("music.no.music.playing", "⏹", "")));
-   }
+          event.reply(lang.getMessage("command.music.skipped", event.getClient().getSuccess(), player.getTrack().getInfo().getTitle(), addedBy, event.getAuthor().getAsMention()));
+          player.stopTrack().subscribe();
+       }, () -> event.replyError(lang.getMessage("music.no.music.playing", "⏹", "")));
+    }
 
-   @Override
-   public void doCommand(SlashCommandEvent event) {
-      AudioHandler handler = this.bot.getPlayerManager().getAudioHandler(event.getGuild());
-      LanguageService lang = this.bot.getSettingsManager().getLanguageService(event.getGuild());
-      
-      handler.getAudioPlayer().ifPresentOrElse(player -> {
-         RequestMetadata rm = null;
-         try {
-            rm = handler.getRequestMetadata();
-         } catch (IOException var5) {
-            event.reply(lang.getMessage("command.music.next.error", event.getClient().getError())).setEphemeral(true).queue();
-            return;
-         }
+    @Override
+    public void doCommand(SlashCommandEvent event) {
+       AudioHandler handler = this.bot.getPlayerManager().getAudioHandler(event.getGuild());
+       LanguageService lang = this.bot.getSettingsManager().getLanguageService(event.getGuild());
+       
+       handler.getAudioPlayer().ifPresentOrElse(player -> {
+          if (player.getTrack() == null) {
+             event.reply(lang.getMessage("music.no.music.playing", "⏹", "")).setEphemeral(true).queue();
+             return;
+          }
+          RequestMetadata rm = null;
+          try {
+             rm = handler.getRequestMetadata();
+          } catch (IOException var5) {
+             event.reply(lang.getMessage("command.music.next.error", event.getClient().getError())).setEphemeral(true).queue();
+             return;
+          }
 
-         String addedBy = rm.owner() == 0L ? lang.getMessage("command.music.autoplay") : lang.getMessage("command.music.added.by", event.getJDA().getUserById(rm.user().id()).getAsMention());
+          String addedBy;
+          if (rm.owner() == 0L) {
+             addedBy = lang.getMessage("command.music.autoplay");
+          } else {
+             net.dv8tion.jda.api.entities.User user = event.getJDA().getUserById(rm.user().id());
+             String mention = user != null ? user.getAsMention() : (rm.user().username() != null ? "**" + rm.user().username() + "**" : String.valueOf(rm.user().id()));
+             addedBy = lang.getMessage("command.music.added.by", mention);
+          }
 
-         event.reply(lang.getMessage("command.music.skipped", event.getClient().getSuccess(), player.getTrack().getInfo().getTitle(), addedBy, event.getUser().getAsMention())).queue();
-         player.stopTrack().subscribe();
-      }, () -> event.reply(lang.getMessage("music.no.music.playing", "⏹", "")).setEphemeral(true).queue());
-   }
+          event.reply(lang.getMessage("command.music.skipped", event.getClient().getSuccess(), player.getTrack().getInfo().getTitle(), addedBy, event.getUser().getAsMention())).queue();
+          player.stopTrack().subscribe();
+       }, () -> event.reply(lang.getMessage("music.no.music.playing", "⏹", "")).setEphemeral(true).queue());
+    }
 }
 
 

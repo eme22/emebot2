@@ -64,8 +64,6 @@ public class StatsService {
          return;
       }
 
-      log.info("Flushing stats to database...");
-
       // 1. Flush Global Stats
       for (Map.Entry<String, LongAdder> entry : globalSnapshot.entrySet()) {
          String name = entry.getKey();

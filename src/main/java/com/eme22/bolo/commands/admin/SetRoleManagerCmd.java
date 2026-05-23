@@ -17,13 +17,13 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.Role;
-import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+import net.dv8tion.jda.api.components.actionrow.ActionRow;
+import net.dv8tion.jda.api.components.selections.StringSelectMenu;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.inject.Singleton;
 
@@ -39,105 +39,129 @@ public class SetRoleManagerCmd extends AdminCommand {
       super(category);
       this.bot = bot;
       this.name = "rolemsgbuild";
-      this.help = "crea un mensaje en el cual los usuarios pueden reaccionar para obtener un rol determinado";
-      this.arguments = "[Mensaje] emoji rol emoji rol... emoji rol";
+      this.help = "crea un mensaje con un menú desplegable en el cual los usuarios pueden seleccionar roles";
+      this.arguments = "[Mensaje] rol rol... rol";
       this.options = Arrays.asList(
          new OptionData(OptionType.STRING, "mensaje", "mensaje a enviar como selector de roles").setRequired(true),
-         new OptionData(OptionType.STRING, "emoji1", "emoji del rol 1").setRequired(true),
-         new OptionData(OptionType.ROLE, "role1", "rol a dar al usuario que reaccione").setRequired(true),
-         new OptionData(OptionType.STRING, "emoji2", "emoji del rol 1").setRequired(false),
-         new OptionData(OptionType.ROLE, "role2", "rol a dar al usuario que reaccione").setRequired(false),
-         new OptionData(OptionType.STRING, "emoji3", "emoji del rol 1").setRequired(false),
-         new OptionData(OptionType.ROLE, "role3", "rol a dar al usuario que reaccione").setRequired(false),
-         new OptionData(OptionType.STRING, "emoji4", "emoji del rol 1").setRequired(false),
-         new OptionData(OptionType.ROLE, "role4", "rol a dar al usuario que reaccione").setRequired(false),
-         new OptionData(OptionType.STRING, "emoji5", "emoji del rol 1").setRequired(false),
-         new OptionData(OptionType.ROLE, "role5", "rol a dar al usuario que reaccione").setRequired(false),
-         new OptionData(OptionType.STRING, "emoji6", "emoji del rol 1").setRequired(false),
-         new OptionData(OptionType.ROLE, "role6", "rol a dar al usuario que reaccione").setRequired(false),
-         new OptionData(OptionType.STRING, "emoji7", "emoji del rol 1").setRequired(false),
-         new OptionData(OptionType.ROLE, "role7", "rol a dar al usuario que reaccione").setRequired(false),
-         new OptionData(OptionType.STRING, "emoji8", "emoji del rol 1").setRequired(false),
-         new OptionData(OptionType.ROLE, "role8", "rol a dar al usuario que reaccione").setRequired(false),
-         new OptionData(OptionType.STRING, "emoji9", "emoji del rol 1").setRequired(false),
-         new OptionData(OptionType.ROLE, "role9", "rol a dar al usuario que reaccione").setRequired(false),
-         new OptionData(OptionType.STRING, "emoji10", "emoji del rol 1").setRequired(false),
-         new OptionData(OptionType.ROLE, "role10", "rol a dar al usuario que reaccione").setRequired(false)
+         new OptionData(OptionType.ROLE, "role1", "rol 1 a dar al usuario").setRequired(true),
+         new OptionData(OptionType.BOOLEAN, "exclusivo", "si es verdadero, solo se puede elegir un rol de la lista a la vez").setRequired(false),
+         new OptionData(OptionType.ROLE, "role2", "rol 2 a dar al usuario").setRequired(false),
+         new OptionData(OptionType.ROLE, "role3", "rol 3 a dar al usuario").setRequired(false),
+         new OptionData(OptionType.ROLE, "role4", "rol 4 a dar al usuario").setRequired(false),
+         new OptionData(OptionType.ROLE, "role5", "rol 5 a dar al usuario").setRequired(false),
+         new OptionData(OptionType.ROLE, "role6", "rol 6 a dar al usuario").setRequired(false),
+         new OptionData(OptionType.ROLE, "role7", "rol 7 a dar al usuario").setRequired(false),
+         new OptionData(OptionType.ROLE, "role8", "rol 8 a dar al usuario").setRequired(false),
+         new OptionData(OptionType.ROLE, "role9", "rol 9 a dar al usuario").setRequired(false),
+         new OptionData(OptionType.ROLE, "role10", "rol 10 a dar al usuario").setRequired(false)
       );
    }
 
    public void execute(SlashCommandEvent event) {
       String message = event.optString("mensaje");
-      List<String> emojis = new ArrayList<>();
+      boolean toggled = event.optBoolean("exclusivo", false);
       List<Role> roles = new ArrayList<>();
       List<OptionMapping> all = event.getOptions();
+      
       all.forEach(optionMapping -> {
-         if (!optionMapping.getName().equals("mensaje")) {
-            if (optionMapping.getType().equals(OptionType.STRING)) {
-               emojis.add(optionMapping.getAsString());
-            } else {
-               roles.add(optionMapping.getAsRole());
-            }
+         if (optionMapping.getType().equals(OptionType.ROLE)) {
+            roles.add(optionMapping.getAsRole());
          }
       });
-      if (emojis.size() != roles.size()) {
-         event.reply(event.getClient().getError() + " Por favor incluya correctamente los emojis y roles").setEphemeral(true).queue();
+
+      if (roles.isEmpty()) {
+         event.reply(event.getClient().getError() + " Por favor incluya correctamente los roles").setEphemeral(true).queue();
       } else {
          RoleManager manager = new RoleManager();
          EmbedBuilder eb = new EmbedBuilder();
          eb.setDescription(message);
-         event.getTextChannel().sendMessageEmbeds(eb.build(), new MessageEmbed[0]).queue(success -> {
-            HashMap<String, String> map = new HashMap<>();
+         eb.setColor(event.getGuild().getSelfMember().getColor());
 
-            for (int i = 0; i < emojis.size(); i++) {
-               String emoji = emojis.get(i);
-               if (emoji.startsWith("<")) {
-                  emoji = emoji.substring(2, emoji.length() - 1);
-               }
+         StringSelectMenu.Builder menuBuilder = StringSelectMenu.create("roleselect")
+            .setPlaceholder("Selecciona tus roles...")
+            .setMinValues(0)
+            .setMaxValues(toggled ? 1 : roles.size());
 
-               success.addReaction(Emoji.fromFormatted(emoji)).queue();
-               Role role = roles.get(i);
-               if (!event.getGuild().getSelfMember().canInteract(role)) {
+         HashMap<String, String> map = new HashMap<>();
+         for (Role role : roles) {
+            if (!event.getGuild().getSelfMember().canInteract(role)) {
+               event.reply(event.getClient().getError() + " El rol " + role.getAsMention() + " es mayor que el rol del bot, no se puede agregar").setEphemeral(true).queue();
+               return;
+            }
+            menuBuilder.addOption(role.getName(), role.getId());
+            map.put(role.getId(), role.getAsMention());
+         }
+
+         StringSelectMenu menu = menuBuilder.build();
+
+         event.getTextChannel().sendMessageEmbeds(eb.build(), new MessageEmbed[0])
+            .setComponents(ActionRow.of(menu))
+            .queue(success -> {
+               manager.setId(success.getIdLong());
+               manager.setEmoji(map);
+               manager.setToggled(toggled);
+
+               try {
+                  Server server = this.bot.getSettingsManager().getSettings(event.getGuild().getIdLong());
+                  server.addToRoleManagers(manager);
+                  server.persist();
+               } catch (Exception var10) {
                   success.delete().queue();
-                  event.reply(event.getClient().getError() + " El rol " + role.getAsMention() + " es mayor que el rol del bot, no se puede agregar").queue();
+                  event.reply(event.getClient().getError() + " Error al guardar el administrador de roles: " + var10.getMessage()).setEphemeral(true).queue();
                   return;
                }
 
-               map.put(emoji, role.getAsMention());
-            }
-
-            manager.setId(success.getIdLong());
-            manager.setEmoji(map);
-            manager.setToggled(false);
-
-            try {
-               Server server = this.bot.getSettingsManager().getSettings(event.getGuild().getIdLong());
-               server.addToRoleManagers(manager);
-               server.persist();
-            } catch (Exception var10) {
-               event.reply(event.getClient().getError() + " Error al guardar el administrador de roles: " + var10.getMessage()).setEphemeral(true).queue();
-               return;
-            }
-
-            event.reply(event.getClient().getSuccess() + " Administrador de roles creado!").setEphemeral(true).queue();
-         });
+               event.reply(event.getClient().getSuccess() + " ¡Administrador de roles creado con éxito!").setEphemeral(true).queue();
+            });
       }
    }
 
    public void execute(CommandEvent event) {
       String[] args = event.getArgs().split("] ");
       if (args.length < 2) {
-         event.replyError(" Por favor incluya al menos un mensaje, un emoji y un rol");
+         event.replyError(" Por favor incluya al menos un mensaje y un rol");
       } else {
          String message = args[0].substring(1);
-         String[] emojisnroles = args[1].split(" ");
-         if (emojisnroles.length % 2 == 0 && emojisnroles.length >= 2) {
+         String[] rolesArgs = args[1].split(" ");
+         if (rolesArgs.length >= 1) {
             RoleManager manager = new RoleManager();
             EmbedBuilder eb = new EmbedBuilder();
             eb.setDescription(message);
-            event.getTextChannel().sendMessageEmbeds(eb.build(), new MessageEmbed[0]).queue(success -> {
-               HashMap<String, String> map = this.processEmojisAndRoles(emojisnroles, event, success);
-               if (map != null) {
+            eb.setColor(event.getGuild().getSelfMember().getColor());
+
+            ArrayList<Role> roles = new ArrayList<>();
+            for (String arg : rolesArgs) {
+               List<Role> found = FinderUtil.findRoles(arg.trim(), event.getGuild());
+               if (!found.isEmpty()) {
+                  roles.add(found.get(0));
+               }
+            }
+
+            if (roles.isEmpty()) {
+               event.replyError(" No se encontraron roles válidos");
+               return;
+            }
+
+            StringSelectMenu.Builder menuBuilder = StringSelectMenu.create("roleselect")
+               .setPlaceholder("Selecciona tus roles...")
+               .setMinValues(0)
+               .setMaxValues(roles.size());
+
+            HashMap<String, String> map = new HashMap<>();
+            for (Role role : roles) {
+               if (!event.getGuild().getSelfMember().canInteract(role)) {
+                  event.replyError("El rol " + role.getAsMention() + " es mayor que el rol del bot, no se puede agregar");
+                  return;
+               }
+               menuBuilder.addOption(role.getName(), role.getId());
+               map.put(role.getId(), role.getAsMention());
+            }
+
+            StringSelectMenu menu = menuBuilder.build();
+
+            event.getChannel().sendMessageEmbeds(eb.build(), new MessageEmbed[0])
+               .setComponents(ActionRow.of(menu))
+               .queue(success -> {
                   manager.setId(success.getIdLong());
                   manager.setEmoji(map);
                   manager.setToggled(false);
@@ -147,47 +171,16 @@ public class SetRoleManagerCmd extends AdminCommand {
                      server.addToRoleManagers(manager);
                      server.persist();
                   } catch (Exception var7) {
+                     success.delete().queue();
                      event.replyError(" Error al guardar el administrador de roles: " + var7.getMessage());
                      return;
                   }
 
                   event.getMessage().delete().queue();
-               }
-            });
+               });
          } else {
-            event.replyError(" Por favor incluya correctamente los emojis y roles");
+            event.replyError(" Por favor incluya correctamente los roles");
          }
       }
-   }
-
-   private HashMap<String, String> processEmojisAndRoles(String[] emojisnroles, CommandEvent event, Message success) {
-      HashMap<String, String> map = new HashMap<>();
-
-      for (int i = 0; i < emojisnroles.length; i += 2) {
-         List<Role> roles = FinderUtil.findRoles(emojisnroles[i + 1].trim(), event.getGuild());
-         String emoji = emojisnroles[i].startsWith("<") ? emojisnroles[i].substring(2, emojisnroles[i].length() - 1) : emojisnroles[i];
-         success.addReaction(Emoji.fromFormatted(emoji)).queue();
-         Role role = roles.get(0);
-         if (!event.getGuild().getSelfMember().canInteract(role)) {
-            success.delete().queue();
-            event.replyError("El rol " + role.getAsMention() + " es mayor que el rol del bot, no se puede agregar");
-            return null;
-         }
-
-         map.put(emoji, role.getAsMention());
-      }
-
-      return map;
    }
 }
-
-
-
-
-
-
-
-
-
-
-

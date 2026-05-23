@@ -32,6 +32,7 @@ import net.dv8tion.jda.api.components.selections.StringSelectMenu;
 import com.eme22.bolo.utils.OtherUtil;
 import com.eme22.bolo.model.LinkEnhancer;
 import com.eme22.bolo.model.RepeatMode;
+import com.eme22.bolo.model.RoleManager;
 import com.eme22.bolo.model.Server;
 import com.jagrosh.jlyrics.Lyrics;
 
@@ -117,28 +118,42 @@ public class InteractionListener implements EventListener {
          });
          break;
          case "music:skip":
-            handler.getVotes().clear();
-            handler.getAudioPlayer().ifPresent(player -> {
-                try {
-                    com.eme22.bolo.audio.RequestMetadata rm = handler.getRequestMetadata();
-                    String message = lang.getMessage(
-                        "command.music.skipped",
-                        successEmoji,
-                        player.getTrack().getInfo().getTitle(),
-                        rm.owner() == 0L
-                           ? lang.getMessage("command.music.autoplay")
-                           : lang.getMessage("command.music.added.by", event.getJDA().getUserById(rm.user().id()).getAsMention()),
-                        event.getUser().getAsMention()
-                    );
-                    player.stopTrack().subscribe(p -> {
-                        event.reply(message).queue();
-                    });
-                } catch (IOException e) {
-                    event.reply(lang.getSuccessMessage("command.skip.success")).setEphemeral(true).queue();
-                    player.stopTrack().subscribe();
-                }
-            });
-            break;
+             handler.getVotes().clear();
+             handler.getAudioPlayer().ifPresentOrElse(player -> {
+                 if (player.getTrack() == null) {
+                     event.reply(lang.getMessage("music.no.music.playing", "⏹", "")).setEphemeral(true).queue();
+                     return;
+                 }
+                 try {
+                     com.eme22.bolo.audio.RequestMetadata rm = handler.getRequestMetadata();
+                     
+                     String addedBy;
+                     if (rm.owner() == 0L) {
+                         addedBy = lang.getMessage("command.music.autoplay");
+                     } else {
+                         User user = event.getJDA().getUserById(rm.user().id());
+                         String mention = user != null ? user.getAsMention() : (rm.user().username() != null ? "**" + rm.user().username() + "**" : String.valueOf(rm.user().id()));
+                         addedBy = lang.getMessage("command.music.added.by", mention);
+                     }
+
+                     String message = lang.getMessage(
+                         "command.music.skipped",
+                         successEmoji,
+                         player.getTrack().getInfo().getTitle(),
+                         addedBy,
+                         event.getUser().getAsMention()
+                     );
+                     player.stopTrack().subscribe(p -> {
+                         event.reply(message).queue();
+                     });
+                 } catch (IOException e) {
+                     event.reply(lang.getSuccessMessage("command.skip.success")).setEphemeral(true).queue();
+                     player.stopTrack().subscribe();
+                 }
+             }, () -> {
+                 event.reply(lang.getMessage("music.no.music.playing", "⏹", "")).setEphemeral(true).queue();
+             });
+             break;
          case "music:stop":
             handler.stopAndClear();
             event.getMessage().editMessage(handler.disableButtons(event.getMessage())).queue();
@@ -276,6 +291,67 @@ public class InteractionListener implements EventListener {
          if (event.getGuild() != null) {
             if (event.getComponentId().equals("setlang")) {
                this.changeServerLanguage(event);
+            }
+
+            if (event.getComponentId().equals("roleselect")) {
+               RoleManager manager = this.bot.getSettingsManager().getSettings(event.getGuild().getIdLong()).getRoleManager(event.getMessageIdLong());
+               if (manager != null) {
+                  java.util.Set<String> allowedRoles = manager.getEmoji().keySet();
+                  List<String> selectedRoles = event.getValues();
+
+                  event.deferReply(true).queue(hook -> {
+                     java.util.List<String> added = new java.util.ArrayList<>();
+                     java.util.List<String> removed = new java.util.ArrayList<>();
+                     java.util.List<String> errors = new java.util.ArrayList<>();
+
+                     for (String roleIdStr : allowedRoles) {
+                        try {
+                           long roleId = Long.parseLong(roleIdStr);
+                           Role role = event.getGuild().getRoleById(roleId);
+                           if (role == null) continue;
+
+                           boolean hasRole = event.getMember().getRoles().contains(role);
+                           boolean shouldHaveRole = selectedRoles.contains(roleIdStr);
+
+                           if (shouldHaveRole && !hasRole) {
+                              if (event.getGuild().getSelfMember().canInteract(role)) {
+                                 event.getGuild().addRoleToMember(event.getMember(), role).queue();
+                                 added.add(role.getName());
+                              } else {
+                                 errors.add(role.getName());
+                              }
+                           } else if (!shouldHaveRole && hasRole) {
+                              if (event.getGuild().getSelfMember().canInteract(role)) {
+                                 event.getGuild().removeRoleFromMember(event.getMember(), role).queue();
+                                 removed.add(role.getName());
+                              } else {
+                                 errors.add(role.getName());
+                              }
+                           }
+                        } catch (Exception e) {
+                           log.error("Error al procesar asignación de rol: " + roleIdStr, e);
+                        }
+                     }
+
+                     StringBuilder response = new StringBuilder("¡Tus roles han sido actualizados!\n");
+                     if (!added.isEmpty()) {
+                        response.append("🟢 **Añadidos:** ").append(String.join(", ", added)).append("\n");
+                     }
+                     if (!removed.isEmpty()) {
+                        response.append("🔴 **Removidos:** ").append(String.join(", ", removed)).append("\n");
+                     }
+                     if (!errors.isEmpty()) {
+                        response.append("⚠️ **No se pudieron modificar (por permisos del bot):** ").append(String.join(", ", errors)).append("\n");
+                     }
+                     if (added.isEmpty() && removed.isEmpty() && errors.isEmpty()) {
+                        response.append("No se realizaron cambios en tus roles.");
+                     }
+
+                     hook.sendMessage(response.toString()).queue();
+                  });
+               } else {
+                  event.reply("Este panel de roles ya no está activo.").setEphemeral(true).queue();
+               }
             }
 
             if (event.getComponentId().equals("music:effect_select")) {

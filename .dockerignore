@@ -7,3 +7,10 @@
 !pom.xml
 !mvnw
 !.mvn/
+!web-panel/
+web-panel/node_modules/
+web-panel/.angular/
+web-panel/dist/
+web-panel/tmp/
+web-panel/out-tsc/
+web-panel/.vscode/

@@ -47,3 +47,9 @@ Thumbs.db
 # Github
 /.github/
 
+.quinoa
+
+node_modules
+node_modules_tmp
+
+web-panel
