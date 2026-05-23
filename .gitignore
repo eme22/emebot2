@@ -53,3 +53,5 @@ node_modules
 node_modules_tmp
 
 web-panel
+.agents
+graphify-out
