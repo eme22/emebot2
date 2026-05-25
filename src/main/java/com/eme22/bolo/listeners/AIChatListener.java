@@ -55,9 +55,13 @@ public class AIChatListener implements EventListener {
         long aiChannelId = server.getAiChannelId();
         boolean isExclusiveChannel = aiChannelId != 0L && event.getChannel().getIdLong() == aiChannelId;
         boolean isMentioned = event.getMessage().getMentions().isMentioned(event.getJDA().getSelfUser());
+        boolean isReplyToBot = false;
+        if (event.getMessage().getReferencedMessage() != null) {
+            isReplyToBot = event.getMessage().getReferencedMessage().getAuthor().getIdLong() == event.getJDA().getSelfUser().getIdLong();
+        }
 
-        // 4. Trigger AI if exclusive channel is used OR the bot is mentioned
-        if (isExclusiveChannel || isMentioned) {
+        // 4. Trigger AI if exclusive channel is used OR the bot is mentioned OR it is a reply to the bot
+        if (isExclusiveChannel || isMentioned || isReplyToBot) {
             long userId = event.getAuthor().getIdLong();
             if (offenseService.isBanned(userId)) {
                 UserOffense offense = offenseService.getOrCreateOffenses(userId);
@@ -83,9 +87,10 @@ public class AIChatListener implements EventListener {
             // Execute asynchronously using the bot's thread pool to not block JDA thread
             bot.getThreadpool().submit(() -> {
                 try {
-                    String aiResponse = chatService.processChatMessage(event, cleanMessage);
-                    if (aiResponse != null && !aiResponse.trim().isEmpty()) {
-                        String content = aiResponse.trim();
+                    AIChatService.AIChatResult result = chatService.processChatMessage(event, cleanMessage);
+                    if (result != null && result.getContent() != null && !result.getContent().trim().isEmpty()) {
+                        String content = result.getContent().trim();
+                        Long dbMessageId = result.getDbMessageId();
                         boolean isFirst = true;
                         while (content.length() > 2000) {
                             int index = content.lastIndexOf("\n\n", 2000);
@@ -102,7 +107,10 @@ public class AIChatListener implements EventListener {
                             String chunk = content.substring(0, index).trim();
                             if (!chunk.isEmpty()) {
                                 if (isFirst) {
-                                    event.getMessage().reply(chunk).complete();
+                                    net.dv8tion.jda.api.entities.Message sentMsg = event.getMessage().reply(chunk).complete();
+                                    if (dbMessageId != null) {
+                                        chatService.updateDiscordMessageId(dbMessageId, sentMsg.getIdLong());
+                                    }
                                     isFirst = false;
                                 } else {
                                     event.getChannel().sendMessage(chunk).complete();
@@ -113,7 +121,11 @@ public class AIChatListener implements EventListener {
                         
                         if (!content.isEmpty()) {
                             if (isFirst) {
-                                event.getMessage().reply(content).queue();
+                                event.getMessage().reply(content).queue(sentMsg -> {
+                                    if (dbMessageId != null) {
+                                        chatService.updateDiscordMessageId(dbMessageId, sentMsg.getIdLong());
+                                    }
+                                });
                             } else {
                                 event.getChannel().sendMessage(content).queue();
                             }
@@ -121,7 +133,7 @@ public class AIChatListener implements EventListener {
                     }
                 } catch (Exception e) {
                     log.error("Error processing AI response asynchronously", e);
-                    event.getMessage().reply("❌ Ocurrió un error inesperado al procesar el mensaje con la IA.").queue();
+                    event.getMessage().reply(chatService.getFriendlyErrorMessage(e)).queue();
                 }
             });
         }

@@ -10,8 +10,13 @@ import java.util.List;
 public class AIChatMessageRepository implements PanacheRepository<AIChatMessage> {
 
     @Transactional
-    public List<AIChatMessage> findActiveSessionMessages(Long guildId, Long channelId, Long userId, String sessionId) {
-        return list("guildId = ?1 and channelId = ?2 and userId = ?3 and sessionId = ?4 order by timestamp asc", guildId, channelId, userId, sessionId);
+    public List<AIChatMessage> findActiveSessionMessages(Long guildId, Long channelId, String sessionId) {
+        return list("guildId = ?1 and channelId = ?2 and sessionId = ?3 order by timestamp asc", guildId, channelId, sessionId);
+    }
+
+    @Transactional
+    public AIChatMessage findByDiscordMessageId(Long discordMessageId) {
+        return find("discordMessageId = ?1", discordMessageId).firstResult();
     }
 
     @Transactional

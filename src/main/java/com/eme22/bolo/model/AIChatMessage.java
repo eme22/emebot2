@@ -44,4 +44,7 @@ public class AIChatMessage {
 
     @Column(name = "message_timestamp", nullable = false)
     private Instant timestamp;
+
+    @Column(name = "discord_message_id")
+    private Long discordMessageId;
 }

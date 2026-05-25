@@ -192,13 +192,24 @@ public class AIChatService {
     private static final int MAX_TOOL_ITERATIONS = 5;
 
     @ActivateRequestContext
-    public String processChatMessage(MessageReceivedEvent event, String userMessageContent) {
+    public AIChatResult processChatMessage(MessageReceivedEvent event, String userMessageContent) {
         Long guildId = event.getGuild().getIdLong();
         Long channelId = event.getChannel().getIdLong();
         Long userId = event.getAuthor().getIdLong();
 
         // 1. Get/Resolve conversation session
-        String sessionId = sessionManager.getOrCreateSession(guildId, channelId, userId);
+        String sessionId = null;
+        if (event.getMessage().getReferencedMessage() != null) {
+            long refMessageId = event.getMessage().getReferencedMessage().getIdLong();
+            AIChatMessage refDbMsg = messageRepository.findByDiscordMessageId(refMessageId);
+            if (refDbMsg != null) {
+                sessionId = refDbMsg.getSessionId();
+            }
+        }
+
+        if (sessionId == null) {
+            sessionId = sessionManager.getOrCreateSession(guildId, channelId, userId);
+        }
 
         // 2. Fetch server specific OpenAI config or fallback to global properties
         Server server = bot.getSettingsManager().getSettings(event.getGuild());
@@ -225,7 +236,7 @@ public class AIChatService {
         candidateConfigs.removeIf(c -> c.getApiKey() == null || c.getApiKey().isEmpty() || "none".equalsIgnoreCase(c.getApiKey()));
 
         if (candidateConfigs.isEmpty()) {
-            return "❌ El servicio de IA no está configurado. Un administrador debe configurar la API Key con `/ai setup` o `/setai`.";
+            return new AIChatResult("❌ El servicio de IA no está configurado. Un administrador debe configurar la API Key con `/ai setup` o `/setai`.", null);
         }
 
         // 3. Save User Message in persistent DB history
@@ -237,6 +248,7 @@ public class AIChatService {
                 .role("user")
                 .content(userMessageContent)
                 .timestamp(Instant.now())
+                .discordMessageId(event.getMessage().getIdLong())
                 .build();
         QuarkusTransaction.requiringNew().run(() -> messageRepository.persist(userMsg));
 
@@ -244,7 +256,7 @@ public class AIChatService {
             // Recursive loop to process tool calls
             for (int iteration = 0; iteration < MAX_TOOL_ITERATIONS; iteration++) {
                 // 4. Retrieve complete active session messages
-                List<AIChatMessage> dbMessages = messageRepository.findActiveSessionMessages(guildId, channelId, userId, sessionId);
+                List<AIChatMessage> dbMessages = messageRepository.findActiveSessionMessages(guildId, channelId, sessionId);
 
                 // 5. Construct OpenAI Messages list
                 List<OpenAIDTO.Message> apiMessages = new ArrayList<>();
@@ -346,10 +358,7 @@ public class AIChatService {
                 }
 
                 if (response == null || response.getChoices() == null || response.getChoices().isEmpty()) {
-                    if (lastException != null) {
-                        return "❌ Todos los proveedores de IA configurados fallaron. Último error: " + lastException.getMessage();
-                    }
-                    return "❌ No recibí una respuesta válida de ninguno de los proveedores de Inteligencia Artificial configurados.";
+                    return new AIChatResult(getFriendlyErrorMessage(lastException), null);
                 }
 
                 // If fallback occurred, log it and reorder candidateConfigs to place successfulConfig at index 0
@@ -446,16 +455,19 @@ public class AIChatService {
                             .content(assistantMsg.getContent())
                             .timestamp(Instant.now())
                             .build();
-                    QuarkusTransaction.requiringNew().run(() -> messageRepository.persist(dbAssistantMsg));
+                    QuarkusTransaction.requiringNew().run(() -> {
+                        messageRepository.persist(dbAssistantMsg);
+                        messageRepository.flush();
+                    });
 
-                    return assistantMsg.getContent();
+                    return new AIChatResult(assistantMsg.getContent(), dbAssistantMsg.getId());
                 }
             }
 
-            return "⚠️ Se alcanzó el límite de llamadas recursivas de herramientas sin una respuesta definitiva.";
+            return new AIChatResult("⚠️ Se alcanzó el límite de llamadas recursivas de herramientas sin una respuesta definitiva.", null);
         } catch (Exception e) {
             log.error("Error during AI Chat processing", e);
-            return "❌ Ocurrió un error al procesar el mensaje con la IA: " + e.getMessage();
+            return new AIChatResult(getFriendlyErrorMessage(e), null);
         }
     }
 
@@ -527,5 +539,79 @@ public class AIChatService {
         public String getBaseUrl() { return baseUrl; }
         public String getModel() { return model; }
         public int getTimeoutSeconds() { return timeoutSeconds; }
+    }
+
+    @Transactional
+    public void updateDiscordMessageId(Long id, Long discordMessageId) {
+        AIChatMessage msg = messageRepository.findById(id);
+        if (msg != null) {
+            msg.setDiscordMessageId(discordMessageId);
+            messageRepository.persist(msg);
+        }
+    }
+
+    public String getFriendlyErrorMessage(Throwable t) {
+        if (t == null) {
+            return "❌ Lo siento, no he recibido una respuesta válida del proveedor de IA.";
+        }
+
+        if (t instanceof jakarta.ws.rs.WebApplicationException wae) {
+            jakarta.ws.rs.core.Response response = wae.getResponse();
+            if (response != null) {
+                int status = response.getStatus();
+                switch (status) {
+                    case 401:
+                    case 403:
+                        return "❌ Lo siento, las credenciales (API Key) para el proveedor de IA no son válidas o han expirado. Un administrador debe configurarlas.";
+                    case 429:
+                        return "❌ Lo siento, he superado el límite de peticiones permitido por el proveedor de IA (límite de cuota o rate limit). Por favor, intenta de nuevo en unos momentos.";
+                    case 400:
+                        return "❌ Lo siento, el proveedor de IA rechazó la solicitud, posiblemente debido a un modelo o parámetro no soportado.";
+                    case 500:
+                    case 502:
+                    case 503:
+                        return "❌ Lo siento, el servidor del proveedor de IA está experimentando problemas, sobrecarga o mantenimiento temporal. Por favor, intenta de nuevo en unos minutos.";
+                    case 504:
+                        return "❌ Lo siento, la solicitud al proveedor de IA excedió el tiempo límite de espera. Por favor, intenta de nuevo.";
+                }
+            }
+        }
+
+        String message = t.getMessage() != null ? t.getMessage() : "";
+        Throwable cause = t.getCause();
+        String causeMessage = cause != null && cause.getMessage() != null ? cause.getMessage() : "";
+        
+        String combined = (message + " " + causeMessage).toLowerCase();
+
+        if (combined.contains("401") || combined.contains("unauthorized") || combined.contains("api key") || combined.contains("api_key") || combined.contains("403") || combined.contains("forbidden")) {
+            return "❌ Lo siento, las credenciales (API Key) para el proveedor de IA no son válidas o han expirado. Un administrador debe configurarlas.";
+        }
+        if (combined.contains("429") || combined.contains("rate limit") || combined.contains("ratelimit") || combined.contains("quota") || combined.contains("too many requests")) {
+            return "❌ Lo siento, he superado el límite de peticiones permitido por el proveedor de IA (límite de cuota o rate limit). Por favor, intenta de nuevo en unos momentos.";
+        }
+        if (combined.contains("timeout") || combined.contains("timed out") || combined.contains("connectex") || combined.contains("504") || combined.contains("connection")) {
+            return "❌ Lo siento, la solicitud al proveedor de IA excedió el tiempo límite de espera o hay un fallo de conexión. Por favor, intenta de nuevo.";
+        }
+        if (combined.contains("500") || combined.contains("502") || combined.contains("503") || combined.contains("service unavailable") || combined.contains("internal server error") || combined.contains("overloaded")) {
+            return "❌ Lo siento, el servidor del proveedor de IA está experimentando problemas o mantenimiento temporal. Por favor, intenta de nuevo en unos minutos.";
+        }
+        if (combined.contains("400") || combined.contains("bad request") || combined.contains("model")) {
+            return "❌ Lo siento, el proveedor de IA rechazó la solicitud, posiblemente debido a una configuración incorrecta o modelo no disponible.";
+        }
+
+        return "❌ Lo siento, en este momento no puedo responder debido a un problema con el proveedor de IA.";
+    }
+
+    public static class AIChatResult {
+        private final String content;
+        private final Long dbMessageId;
+
+        public AIChatResult(String content, Long dbMessageId) {
+            this.content = content;
+            this.dbMessageId = dbMessageId;
+        }
+
+        public String getContent() { return content; }
+        public Long getDbMessageId() { return dbMessageId; }
     }
 }
