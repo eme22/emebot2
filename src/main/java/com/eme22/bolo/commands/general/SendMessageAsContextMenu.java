@@ -58,40 +58,6 @@ public class SendMessageAsContextMenu extends UserContextMenu {
       event.replyModal(modal).queue();
    }
 
-   private void sendFakeMessage(User usuario, String message, TextChannel textChannel) throws IOException {
-      Member member = textChannel.getGuild().getMember(usuario);
-      String avatarUrl;
-      String name;
-      if (member == null) {
-         avatarUrl = usuario.getEffectiveAvatarUrl();
-         name = usuario.getName();
-      } else {
-         avatarUrl = member.getEffectiveAvatarUrl();
-         name = member.getEffectiveName();
-      }
-
-      URL url = java.net.URI.create(avatarUrl).toURL();
-      Webhook webhook = textChannel.createWebhook(name).setAvatar(Icon.from(new BufferedInputStream(url.openStream()))).complete();
-      JDAWebhookClient client = JDAWebhookClient.from(webhook);
-
-      try {
-         client.send(message).thenRun(() -> webhook.delete().queue());
-      } catch (Throwable var13) {
-         if (client != null) {
-            try {
-               client.close();
-            } catch (Throwable var12) {
-               var13.addSuppressed(var12);
-            }
-         }
-
-         throw var13;
-      }
-
-      if (client != null) {
-         client.close();
-      }
-   }
 }
 
 

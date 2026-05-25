@@ -37,6 +37,7 @@ import com.eme22.bolo.model.Server;
 import com.jagrosh.jlyrics.Lyrics;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -432,15 +433,15 @@ public class InteractionListener implements EventListener {
       LanguageService languageService = this.bot.getSettingsManager().getLanguageService(event.getGuild());
       TextChannel textChannel = event.getJDA().getTextChannelById(event.getChannel().getId());
 
-      try {
-         this.sendFakeMessage(user, body, textChannel);
-      } catch (IOException var7) {
-         log.error("Error sending message", var7);
-         event.reply(languageService.getErrorMessage("command.sendmessage.error")).setEphemeral(true).queue();
-         return;
-      }
-
-      event.reply(languageService.getSuccessMessage("command.sendmessage.success")).setEphemeral(true).queue();
+      event.deferReply(true).queue(hook -> {
+         this.sendFakeMessage(user, body, textChannel)
+             .thenRun(() -> hook.sendMessage(languageService.getSuccessMessage("command.sendmessage.success")).queue())
+             .exceptionally(throwable -> {
+                log.error("Error sending message", throwable);
+                hook.sendMessage(languageService.getErrorMessage("command.sendmessage.error")).queue();
+                return null;
+             });
+      });
    }
 
    private void changeServerLanguage(@NotNull StringSelectInteractionEvent event) {
@@ -451,7 +452,9 @@ public class InteractionListener implements EventListener {
          .queue(interaction -> event.getMessage().delete().queue(), error -> log.error("Error setting language", error));
    }
 
-   private void sendFakeMessage(User usuario, String message, TextChannel textChannel) throws IOException {
+   private CompletableFuture<Void> sendFakeMessage(User usuario, String message, TextChannel textChannel) {
+      CompletableFuture<Void> future = new CompletableFuture<>();
+
       Member member = textChannel.getGuild().getMember(usuario);
       String avatarUrl;
       String name;
@@ -463,23 +466,42 @@ public class InteractionListener implements EventListener {
          name = member.getEffectiveName();
       }
 
-      URL url = URI.create(avatarUrl).toURL();
-      Webhook webhook = textChannel.createWebhook(name).setAvatar(Icon.from(new BufferedInputStream(url.openStream()))).complete();
-      JDAWebhookClient client = JDAWebhookClient.from(webhook);
+      CompletableFuture.runAsync(() -> {
+         try {
+            URL url = URI.create(avatarUrl).toURL();
+            Icon avatar = Icon.from(new BufferedInputStream(url.openStream()));
+            textChannel.createWebhook(name).setAvatar(avatar).queue(webhook -> {
+               JDAWebhookClient client = JDAWebhookClient.from(webhook);
+               client.send(message)
+                  .thenRun(() -> {
+                     webhook.delete().queue(
+                        v -> {
+                           client.close();
+                           future.complete(null);
+                        },
+                        t -> {
+                           client.close();
+                           future.complete(null);
+                        }
+                     );
+                  })
+                  .exceptionally(throwable -> {
+                     webhook.delete().queue(
+                        v -> client.close(),
+                        t -> client.close()
+                     );
+                     future.completeExceptionally(throwable);
+                     return null;
+                  });
+            }, throwable -> {
+               future.completeExceptionally(throwable);
+            });
+         } catch (IOException e) {
+            future.completeExceptionally(e);
+         }
+      });
 
-      try {
-          client.send(message).thenRun(() -> webhook.delete().queue());
-      } catch (Throwable throwable) {
-          try {
-              client.close();
-          } catch (Throwable var12) {
-              throwable.addSuppressed(var12);
-          }
-
-          throw throwable;
-      }
-
-       client.close();
+      return future;
    }
 
    private String getString(Long guildId, String key, Object... args) {

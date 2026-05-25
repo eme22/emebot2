@@ -12,6 +12,7 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Arrays;
+import java.util.concurrent.CompletableFuture;
 import net.dv8tion.jda.api.entities.Icon;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.User;
@@ -45,17 +46,18 @@ public class SendMessageAsCmd extends BaseCommand {
          String message = event.getOption("mensaje").getAsString();
          User usuario = event.getOption("usuario").getAsUser();
 
-         try {
-            this.sendFakeMessage(usuario, message, event.getTextChannel());
-            hook.editOriginal(event.getClient().getSuccess() + " Mensaje Enviado").queue();
-         } catch (IOException e) {
-            e.printStackTrace();
-            hook.editOriginal(event.getClient().getError() + " Error al enviar el mensaje").queue();
-         }
+         this.sendFakeMessage(usuario, message, event.getTextChannel())
+             .thenRun(() -> hook.editOriginal(event.getClient().getSuccess() + " Mensaje Enviado").queue())
+             .exceptionally(throwable -> {
+                hook.editOriginal(event.getClient().getError() + " Error al enviar el mensaje").queue();
+                return null;
+             });
       });
    }
 
-   private void sendFakeMessage(User usuario, String message, TextChannel textChannel) throws IOException {
+   private CompletableFuture<Void> sendFakeMessage(User usuario, String message, TextChannel textChannel) {
+      CompletableFuture<Void> future = new CompletableFuture<>();
+
       Member member = textChannel.getGuild().getMember(usuario);
       String avatarUrl;
       String name;
@@ -67,27 +69,42 @@ public class SendMessageAsCmd extends BaseCommand {
          name = member.getEffectiveName();
       }
 
-      URL url = java.net.URI.create(avatarUrl).toURL();
-      Webhook webhook = textChannel.createWebhook(name).setAvatar(Icon.from(new BufferedInputStream(url.openStream()))).complete();
-      JDAWebhookClient client = JDAWebhookClient.from(webhook);
-
-      try {
-         client.send(message).thenRun(() -> webhook.delete().queue());
-      } catch (Throwable var13) {
-         if (client != null) {
-            try {
-               client.close();
-            } catch (Throwable var12) {
-               var13.addSuppressed(var12);
-            }
+      CompletableFuture.runAsync(() -> {
+         try {
+            URL url = java.net.URI.create(avatarUrl).toURL();
+            Icon avatar = Icon.from(new BufferedInputStream(url.openStream()));
+            textChannel.createWebhook(name).setAvatar(avatar).queue(webhook -> {
+               JDAWebhookClient client = JDAWebhookClient.from(webhook);
+               client.send(message)
+                  .thenRun(() -> {
+                     webhook.delete().queue(
+                        v -> {
+                           client.close();
+                           future.complete(null);
+                        },
+                        t -> {
+                           client.close();
+                           future.complete(null);
+                        }
+                     );
+                  })
+                  .exceptionally(throwable -> {
+                     webhook.delete().queue(
+                        v -> client.close(),
+                        t -> client.close()
+                     );
+                     future.completeExceptionally(throwable);
+                     return null;
+                  });
+            }, throwable -> {
+               future.completeExceptionally(throwable);
+            });
+         } catch (IOException e) {
+            future.completeExceptionally(e);
          }
+      });
 
-         throw var13;
-      }
-
-      if (client != null) {
-         client.close();
-      }
+      return future;
    }
 
    public void execute(CommandEvent event) {
@@ -101,12 +118,12 @@ public class SendMessageAsCmd extends BaseCommand {
             User usuario = (User)FinderUtil.findUsers(data[0].substring(1).trim(), event.getJDA()).get(0);
             String message = data[1];
 
-            try {
-               this.sendFakeMessage(usuario, message, event.getTextChannel());
-               event.getMessage().delete().queue();
-            } catch (IOException var6) {
-               var6.printStackTrace();
-            }
+            this.sendFakeMessage(usuario, message, event.getTextChannel())
+                .thenRun(() -> event.getMessage().delete().queue())
+                .exceptionally(throwable -> {
+                    event.replyError(" Error al enviar el mensaje");
+                    return null;
+                });
          }
       }
    }
