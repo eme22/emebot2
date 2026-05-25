@@ -36,6 +36,9 @@ public class GeneralTools {
     @Inject
     UserOffenseService userOffenseService;
 
+    @Inject
+    com.eme22.imageapi.AnimeImageClient animeImageClient;
+
     @Produces
     @ApplicationScoped
     public AITool getLatencyTool() {
@@ -207,18 +210,29 @@ public class GeneralTools {
 
             @Override
             public String getDescription() {
-                return "Elimina un número específico de mensajes del canal de texto actual (máximo 100). Requiere permisos de Gestionar Mensajes.";
+                return "Elimina un número específico de mensajes del canal de texto actual (máximo 100), con la opción de filtrar por usuario o texto de búsqueda. Requiere privilegios de Administración.";
             }
 
             @Override
             public OpenAIDTO.Tool getDefinition() {
                 Map<String, Object> props = new HashMap<>();
+                
                 Map<String, Object> amountProp = new HashMap<>();
                 amountProp.put("type", "integer");
                 amountProp.put("description", "Número de mensajes a eliminar (entre 1 y 100).");
                 amountProp.put("minimum", 1);
                 amountProp.put("maximum", 100);
                 props.put("amount", amountProp);
+
+                Map<String, Object> userIdProp = new HashMap<>();
+                userIdProp.put("type", "string");
+                userIdProp.put("description", "ID opcional del usuario cuyos mensajes se desean eliminar.");
+                props.put("userId", userIdProp);
+
+                Map<String, Object> searchTextProp = new HashMap<>();
+                searchTextProp.put("type", "string");
+                searchTextProp.put("description", "Texto opcional para filtrar los mensajes a eliminar (solo se eliminarán mensajes que contengan este texto).");
+                props.put("searchText", searchTextProp);
 
                 return OpenAIDTO.Tool.builder()
                         .type("function")
@@ -236,7 +250,7 @@ public class GeneralTools {
 
             @Override
             public String getRequiredMode() {
-                return "NORMAL";
+                return "ADMIN";
             }
 
             @Override
@@ -255,12 +269,45 @@ public class GeneralTools {
                     return "Error: La cantidad de mensajes debe estar entre 1 y 100.";
                 }
 
-                // Plus 1 to account for the AI message or user command if necessary, but we keep it simple:
-                event.getChannel().getIterableHistory().takeAsync(amount)
-                        .thenAccept(messages -> event.getChannel().purgeMessages(messages))
-                        .get(); // Wait for completion
+                String userIdStr = (String) arguments.get("userId");
+                String searchText = (String) arguments.get("searchText");
 
-                return String.format("Se han eliminado correctamente %d mensajes de este canal.", amount);
+                final Long filterUserId = (userIdStr != null && !userIdStr.trim().isEmpty()) 
+                        ? Long.parseLong(userIdStr.replaceAll("\\D", "")) 
+                        : null;
+                
+                final String filterText = (searchText != null && !searchText.trim().isEmpty()) 
+                        ? searchText.trim().toLowerCase() 
+                        : null;
+
+                if (filterUserId != null || filterText != null) {
+                    List<net.dv8tion.jda.api.entities.Message> history = event.getChannel().getIterableHistory().takeAsync(100).get();
+                    List<net.dv8tion.jda.api.entities.Message> toDelete = new ArrayList<>();
+                    for (net.dv8tion.jda.api.entities.Message msg : history) {
+                        if (toDelete.size() >= amount) {
+                            break;
+                        }
+                        boolean matches = true;
+                        if (filterUserId != null && msg.getAuthor().getIdLong() != filterUserId) {
+                            matches = false;
+                        }
+                        if (filterText != null && !msg.getContentRaw().toLowerCase().contains(filterText)) {
+                            matches = false;
+                        }
+                        if (matches) {
+                            toDelete.add(msg);
+                        }
+                    }
+                    if (toDelete.isEmpty()) {
+                        return "No se encontraron mensajes recientes que coincidan con los filtros de búsqueda especificados.";
+                    }
+                    event.getChannel().purgeMessages(toDelete);
+                    return String.format("Se han eliminado correctamente %d mensajes que coincidían con los criterios especificados.", toDelete.size());
+                } else {
+                    List<net.dv8tion.jda.api.entities.Message> history = event.getChannel().getIterableHistory().takeAsync(amount).get();
+                    event.getChannel().purgeMessages(history);
+                    return String.format("Se han eliminado correctamente %d mensajes de este canal.", amount);
+                }
             }
         };
     }
@@ -706,6 +753,292 @@ public class GeneralTools {
                     sb.append(String.format("... y %d miembros más.", totalMembers - maxToShow));
                 }
                 return sb.toString();
+            }
+        };
+    }
+
+    @Produces
+    @ApplicationScoped
+    public AITool getSendAnimeActionTool() {
+        return new AITool() {
+            @Override
+            public String getName() {
+                return "send_anime_action";
+            }
+
+            @Override
+            public String getDescription() {
+                return "Realiza una acción divertida o cariñosa con un GIF de anime (beso, mordida, bofetada, toque/molestar, lamer) hacia otro usuario en el servidor.";
+            }
+
+            @Override
+            public OpenAIDTO.Tool getDefinition() {
+                Map<String, Object> props = new HashMap<>();
+
+                Map<String, Object> targetUserProp = new HashMap<>();
+                targetUserProp.put("type", "string");
+                targetUserProp.put("description", "ID de Discord del usuario objetivo de la acción.");
+                props.put("targetUserId", targetUserProp);
+
+                Map<String, Object> actionProp = new HashMap<>();
+                actionProp.put("type", "string");
+                actionProp.put("description", "El tipo de acción a realizar: 'kiss' (beso), 'bite' (mordida), 'slap' (cachetada/bofetada), 'poke' (tocar/molestar), 'lick' (lamer).");
+                List<String> enums = Arrays.asList("kiss", "bite", "slap", "poke", "lick");
+                actionProp.put("enum", enums);
+                props.put("action", actionProp);
+
+                return OpenAIDTO.Tool.builder()
+                        .type("function")
+                        .function(OpenAIDTO.FunctionDefinition.builder()
+                                .name(getName())
+                                .description(getDescription())
+                                .parameters(OpenAIDTO.ParametersDefinition.builder()
+                                        .type("object")
+                                        .properties(props)
+                                        .required(Arrays.asList("targetUserId", "action"))
+                                        .build())
+                                .build())
+                        .build();
+            }
+
+            @Override
+            public String getRequiredMode() {
+                return "NORMAL";
+            }
+
+            @Override
+            public List<Permission> getRequiredUserPermissions() {
+                return Collections.emptyList();
+            }
+
+            @Override
+            public String execute(MessageReceivedEvent event, Map<String, Object> arguments) throws Exception {
+                String targetUserIdStr = (String) arguments.get("targetUserId");
+                String action = (String) arguments.get("action");
+
+                if (targetUserIdStr == null || targetUserIdStr.trim().isEmpty() || action == null || action.trim().isEmpty()) {
+                    return "Error: Faltan los argumentos requeridos.";
+                }
+
+                long targetUserId = Long.parseLong(targetUserIdStr.replaceAll("\\D", ""));
+                net.dv8tion.jda.api.entities.Member targetMember = event.getGuild().getMemberById(targetUserId);
+
+                if (targetMember == null) {
+                    return "Error: No se encontró al usuario objetivo en el servidor.";
+                }
+
+                if (targetMember.getUser().isBot()) {
+                    return "Error: No puedes realizar esta acción a un bot.";
+                }
+
+                if (targetMember.getIdLong() == event.getMember().getIdLong()) {
+                    return "Error: No puedes realizar esta acción a ti mismo.";
+                }
+
+                String actionText = "";
+                String imageUrl = null;
+
+                try {
+                    switch (action.trim().toLowerCase()) {
+                        case "kiss":
+                            actionText = com.eme22.bolo.nsfw.NSFWStrings.getRandomKiss();
+                            imageUrl = animeImageClient.getImage(com.eme22.imageapi.util.Endpoints.WAIFU_SFW.KISS);
+                            break;
+                        case "bite":
+                            actionText = com.eme22.bolo.nsfw.NSFWStrings.getRandomBite();
+                            imageUrl = animeImageClient.getImage(com.eme22.imageapi.util.Endpoints.WAIFU_SFW.BITE);
+                            break;
+                        case "slap":
+                            actionText = com.eme22.bolo.nsfw.NSFWStrings.getRandomSlap();
+                            imageUrl = animeImageClient.getImage(com.eme22.imageapi.util.Endpoints.WAIFU_SFW.SLAP);
+                            break;
+                        case "poke":
+                            actionText = com.eme22.bolo.nsfw.NSFWStrings.getRandomPoke();
+                            imageUrl = animeImageClient.getImage(com.eme22.imageapi.util.Endpoints.WAIFU_SFW.POKE);
+                            break;
+                        case "lick":
+                            actionText = com.eme22.bolo.nsfw.NSFWStrings.getRandomLick();
+                            imageUrl = animeImageClient.getImage(com.eme22.imageapi.util.Endpoints.WAIFU_SFW.LICK);
+                            break;
+                        default:
+                            return "Error: Acción no reconocida.";
+                    }
+                } catch (Exception e) {
+                    return "Error al obtener la imagen/acción de anime: " + e.getMessage();
+                }
+
+                net.dv8tion.jda.api.EmbedBuilder eb = new net.dv8tion.jda.api.EmbedBuilder();
+                eb.setDescription(event.getMember().getAsMention() + actionText + targetMember.getAsMention());
+                eb.setColor(event.getGuild().getSelfMember().getColor());
+                if (imageUrl != null) {
+                    eb.setImage(imageUrl);
+                }
+
+                event.getChannel().sendMessageEmbeds(eb.build()).queue();
+                return String.format("Se ha enviado correctamente la acción interactiva de %s hacia %s.", action, targetMember.getEffectiveName());
+            }
+        };
+    }
+
+    @Produces
+    @ApplicationScoped
+    public AITool getBirthdaysTool() {
+        return new AITool() {
+            @Override
+            public String getName() {
+                return "get_birthdays";
+            }
+
+            @Override
+            public String getDescription() {
+                return "Obtiene la lista completa de todos los cumpleaños configurados en el servidor.";
+            }
+
+            @Override
+            public OpenAIDTO.Tool getDefinition() {
+                return OpenAIDTO.Tool.builder()
+                        .type("function")
+                        .function(OpenAIDTO.FunctionDefinition.builder()
+                                .name(getName())
+                                .description(getDescription())
+                                .parameters(OpenAIDTO.ParametersDefinition.builder()
+                                        .type("object")
+                                        .properties(new HashMap<>())
+                                        .required(new ArrayList<>())
+                                        .build())
+                                .build())
+                        .build();
+            }
+
+            @Override
+            public String getRequiredMode() {
+                return "NORMAL";
+            }
+
+            @Override
+            public List<Permission> getRequiredUserPermissions() {
+                return Collections.emptyList();
+            }
+
+            @Override
+            public String execute(MessageReceivedEvent event, Map<String, Object> arguments) throws Exception {
+                com.eme22.bolo.model.Server settings = bot.getSettingsManager().getSettings(event.getGuild());
+                List<com.eme22.bolo.model.Birthday> birthdays = settings.getBirthdays();
+
+                if (birthdays == null || birthdays.isEmpty()) {
+                    return "No hay ningún cumpleaños configurado en este servidor todavía.";
+                }
+
+                StringBuilder sb = new StringBuilder("Lista de Cumpleaños registrados en el servidor:\n");
+                for (com.eme22.bolo.model.Birthday bd : birthdays) {
+                    if (bd.isEnabled()) {
+                        String name = "ID: " + bd.getUser();
+                        net.dv8tion.jda.api.entities.Member m = event.getGuild().getMemberById(bd.getUser());
+                        if (m != null) {
+                            name = m.getEffectiveName();
+                        }
+                        String dateStr = bd.getDate() != null ? bd.getDate().toString() : "Fecha no definida";
+                        sb.append(String.format("- %s: %s | Mensaje: \"%s\"\n", name, dateStr, bd.getMessage()));
+                    }
+                }
+                return sb.toString();
+            }
+        };
+    }
+
+    @Produces
+    @ApplicationScoped
+    public AITool getSetBirthdayTool() {
+        return new AITool() {
+            @Override
+            public String getName() {
+                return "set_birthday";
+            }
+
+            @Override
+            public String getDescription() {
+                return "Configura o actualiza el cumpleaños de un usuario en el servidor (especificando el día, mes y mensaje personalizado).";
+            }
+
+            @Override
+            public OpenAIDTO.Tool getDefinition() {
+                Map<String, Object> props = new HashMap<>();
+
+                Map<String, Object> dayProp = new HashMap<>();
+                dayProp.put("type", "integer");
+                dayProp.put("description", "Día del cumpleaños (1-31).");
+                dayProp.put("minimum", 1);
+                dayProp.put("maximum", 31);
+                props.put("day", dayProp);
+
+                Map<String, Object> monthProp = new HashMap<>();
+                monthProp.put("type", "integer");
+                monthProp.put("description", "Mes del cumpleaños (1-12).");
+                monthProp.put("minimum", 1);
+                monthProp.put("maximum", 12);
+                props.put("month", monthProp);
+
+                Map<String, Object> messageProp = new HashMap<>();
+                messageProp.put("type", "string");
+                messageProp.put("description", "El mensaje de cumpleaños para mostrar ese día (ej. '@me feliz cumpleaños'). Puedes usar '@me' para mencionarte.");
+                props.put("message", messageProp);
+
+                return OpenAIDTO.Tool.builder()
+                        .type("function")
+                        .function(OpenAIDTO.FunctionDefinition.builder()
+                                .name(getName())
+                                .description(getDescription())
+                                .parameters(OpenAIDTO.ParametersDefinition.builder()
+                                        .type("object")
+                                        .properties(props)
+                                        .required(Arrays.asList("day", "month", "message"))
+                                        .build())
+                                .build())
+                        .build();
+            }
+
+            @Override
+            public String getRequiredMode() {
+                return "NORMAL";
+            }
+
+            @Override
+            public List<Permission> getRequiredUserPermissions() {
+                return Collections.emptyList();
+            }
+
+            @Override
+            public String execute(MessageReceivedEvent event, Map<String, Object> arguments) throws Exception {
+                Number dayNum = (Number) arguments.get("day");
+                Number monthNum = (Number) arguments.get("month");
+                String message = (String) arguments.get("message");
+
+                if (dayNum == null || monthNum == null || message == null || message.trim().isEmpty()) {
+                    return "Error: Faltan argumentos requeridos.";
+                }
+
+                int day = dayNum.intValue();
+                int month = monthNum.intValue();
+                String processedMessage = message.replaceAll("@me", event.getMember().getAsMention());
+
+                com.eme22.bolo.model.Server settings = bot.getSettingsManager().getSettings(event.getGuild());
+                com.eme22.bolo.model.Birthday old = settings.getUserBirthday(event.getMember().getUser().getIdLong());
+                if (old != null) {
+                    settings.removeBirthDay(event.getMember().getUser().getIdLong());
+                    settings.persist();
+                }
+
+                com.eme22.bolo.model.Birthday cumple = new com.eme22.bolo.model.Birthday();
+                cumple.setDate(java.time.LocalDate.of(java.util.Calendar.getInstance().get(java.util.Calendar.YEAR), month, day));
+                cumple.setUser(event.getMember().getUser().getIdLong());
+                cumple.setServer(event.getGuild().getIdLong());
+                cumple.setEnabled(true);
+                cumple.setMessage(processedMessage);
+
+                settings.addBirthDay(cumple);
+                settings.persist();
+
+                return String.format("Se ha registrado correctamente tu cumpleaños para el día %d/%d con el mensaje: \"%s\".", day, month, processedMessage);
             }
         };
     }

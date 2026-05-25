@@ -200,14 +200,27 @@ public class MusicTools {
                     return "Error: Debes proporcionar un término de búsqueda o enlace en el argumento 'query'.";
                 }
 
-                if (event.getMember() == null || event.getMember().getVoiceState() == null || !event.getMember().getVoiceState().inAudioChannel()) {
-                    return "Error: Debes estar conectado a un canal de voz para que pueda reproducir música.";
+                Server settings = bot.getSettingsManager().getSettings(event.getGuild());
+                int voiceCheck = com.eme22.bolo.utils.OtherUtil.isUserInVoice(event.getGuild(), settings, event.getMember());
+                if (voiceCheck == 0) {
+                    return "Error: Debes estar conectado a un canal de voz para poder reproducir música.";
+                } else if (voiceCheck == 2) {
+                    return "Error: No puedes reproducir música en el canal AFK.";
                 }
 
-                net.dv8tion.jda.api.entities.channel.middleman.AudioChannel userChannel = event.getMember().getVoiceState().getChannel();
+                if (!com.eme22.bolo.utils.OtherUtil.isAudioChannelAllowed(event.getGuild(), settings, event.getMember())) {
+                    net.dv8tion.jda.api.entities.channel.concrete.VoiceChannel configuredChannel = event.getGuild().getVoiceChannelById(settings.getVoiceChannelId());
+                    if (configuredChannel != null) {
+                        return String.format("Error: Debes estar conectado al canal de voz de música configurado: %s.", configuredChannel.getName());
+                    } else {
+                        return "Error: Debes estar conectado al mismo canal de voz que el bot para reproducir música.";
+                    }
+                }
+
+                net.dv8tion.jda.api.entities.channel.unions.AudioChannelUnion userChannel = event.getMember().getVoiceState().getChannel();
                 
                 try {
-                    bot.getPlayerManager().setUpHandler(event.getGuild(), event.getMember().getVoiceState().getChannel().asVoiceChannel());
+                    bot.getPlayerManager().setUpHandler(event.getGuild(), userChannel.asVoiceChannel());
                     event.getGuild().getJDA().getDirectAudioController().connect(userChannel);
                 } catch (Exception e) {
                     return "Error al intentar conectar al canal de voz: " + e.getMessage();
@@ -713,6 +726,168 @@ public class MusicTools {
 
                 LanguageService lang = bot.getSettingsManager().getLanguageService(event.getGuild());
                 return "El modo de repetición ahora está configurado en: `" + lang.getMessage("music.repeat." + value.getKey()) + "`";
+            }
+        };
+    }
+
+    @Produces
+    @ApplicationScoped
+    public AITool getSetMusicEffectTool() {
+        return new AITool() {
+            @Override
+            public String getName() {
+                return "set_music_effect";
+            }
+
+            @Override
+            public String getDescription() {
+                return "Aplica un efecto de audio/filtro a la música en reproducción en el servidor (como bassboost, nightcore, vaporwave, karaoke, distortion, o ninguno para limpiar).";
+            }
+
+            @Override
+            public OpenAIDTO.Tool getDefinition() {
+                Map<String, Object> effectProp = new HashMap<>();
+                effectProp.put("type", "string");
+                effectProp.put("description", "El efecto de música a aplicar: 'bassboost', 'nightcore', 'vaporwave', 'karaoke', 'distortion', o 'none'.");
+                List<String> enums = Arrays.asList("bassboost", "nightcore", "vaporwave", "karaoke", "distortion", "none");
+                effectProp.put("enum", enums);
+
+                Map<String, Object> properties = new HashMap<>();
+                properties.put("effect", effectProp);
+
+                List<String> required = Collections.singletonList("effect");
+
+                return OpenAIDTO.Tool.builder()
+                        .type("function")
+                        .function(OpenAIDTO.FunctionDefinition.builder()
+                                .name(getName())
+                                .description(getDescription())
+                                .parameters(OpenAIDTO.ParametersDefinition.builder()
+                                        .type("object")
+                                        .properties(properties)
+                                        .required(required)
+                                        .build())
+                                .build())
+                        .build();
+            }
+
+            @Override
+            public String getRequiredMode() {
+                return "NORMAL";
+            }
+
+            @Override
+            public List<Permission> getRequiredUserPermissions() {
+                return Collections.emptyList();
+            }
+
+            @Override
+            public String execute(MessageReceivedEvent event, Map<String, Object> arguments) throws Exception {
+                String effectStr = (String) arguments.get("effect");
+                if (effectStr == null || effectStr.trim().isEmpty()) {
+                    return "Error: Debes proporcionar un efecto en el argumento 'effect'.";
+                }
+
+                AudioHandler handler = bot.getPlayerManager().getAudioHandler(event.getGuild());
+                if (handler == null || !handler.isMusicPlaying(event.getJDA())) {
+                    return "No se está reproduciendo música en este servidor en este momento para poder aplicar un efecto.";
+                }
+
+                String cleanEffect = effectStr.trim().toLowerCase();
+                if (!cleanEffect.startsWith("effect_")) {
+                    cleanEffect = "effect_" + cleanEffect;
+                }
+
+                List<String> validEffects = Arrays.asList("effect_bassboost", "effect_nightcore", "effect_vaporwave", "effect_karaoke", "effect_distortion", "effect_none");
+                if (!validEffects.contains(cleanEffect)) {
+                    return "Error: Efecto de música inválido. Los efectos válidos son: 'bassboost', 'nightcore', 'vaporwave', 'karaoke', 'distortion', o 'none'.";
+                }
+
+                handler.setEffect(cleanEffect);
+                LanguageService lang = bot.getSettingsManager().getLanguageService(event.getGuild());
+                String translatedEffectName = lang.getMessage(cleanEffect.replace("_", ".") + ".label");
+                return String.format("Se ha aplicado correctamente el efecto musical: **%s**.", translatedEffectName);
+            }
+        };
+    }
+
+    @Produces
+    @ApplicationScoped
+    public AITool getSearchLyricsTool() {
+        return new AITool() {
+            @Override
+            public String getName() {
+                return "search_lyrics";
+            }
+
+            @Override
+            public String getDescription() {
+                return "Busca las letras de una canción específica (o de la canción que suena en este momento si no se proporciona el argumento query).";
+            }
+
+            @Override
+            public OpenAIDTO.Tool getDefinition() {
+                Map<String, Object> queryProp = new HashMap<>();
+                queryProp.put("type", "string");
+                queryProp.put("description", "El título de la canción a buscar (opcional. Si se omite, buscará la letra de la canción que suena en reproducción en este momento).");
+
+                Map<String, Object> properties = new HashMap<>();
+                properties.put("query", queryProp);
+
+                return OpenAIDTO.Tool.builder()
+                        .type("function")
+                        .function(OpenAIDTO.FunctionDefinition.builder()
+                                .name(getName())
+                                .description(getDescription())
+                                .parameters(OpenAIDTO.ParametersDefinition.builder()
+                                        .type("object")
+                                        .properties(properties)
+                                        .required(new ArrayList<>())
+                                        .build())
+                                .build())
+                        .build();
+            }
+
+            @Override
+            public String getRequiredMode() {
+                return "NORMAL";
+            }
+
+            @Override
+            public List<Permission> getRequiredUserPermissions() {
+                return Collections.emptyList();
+            }
+
+            @Override
+            public String execute(MessageReceivedEvent event, Map<String, Object> arguments) throws Exception {
+                String query = (String) arguments.get("query");
+                String title = null;
+
+                if (query != null && !query.trim().isEmpty()) {
+                    title = query.trim();
+                } else {
+                    AudioHandler handler = bot.getPlayerManager().getAudioHandler(event.getGuild());
+                    if (handler != null && handler.isMusicPlaying(event.getJDA())) {
+                        title = handler.getAudioPlayer().get().getTrack().getInfo().getTitle();
+                    }
+                }
+
+                if (title == null || title.isEmpty()) {
+                    return "Error: No se proporcionó un título de canción y no hay música en reproducción para obtener las letras.";
+                }
+
+                com.jagrosh.jlyrics.Lyrics lyrics = com.eme22.bolo.utils.OtherUtil.getLyrics(title);
+                if (lyrics == null) {
+                    return String.format("No se encontraron letras para la canción: '%s'.", title);
+                }
+
+                String content = lyrics.getContent();
+                if (content.length() > 3000) {
+                    content = content.substring(0, 3000) + "\n\n...(Letra demasiado larga, truncada)...";
+                }
+
+                return String.format("Letras encontradas para **%s** por **%s**:\n\n%s", 
+                    lyrics.getTitle(), lyrics.getAuthor(), content);
             }
         };
     }
