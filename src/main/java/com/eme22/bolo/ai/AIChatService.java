@@ -15,6 +15,7 @@ import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
+import jakarta.annotation.PostConstruct;
 import java.net.URI;
 import java.time.Instant;
 import java.util.*;
@@ -48,6 +49,66 @@ public class AIChatService {
     @ConfigProperty(name = "openai.model")
     String globalModel;
 
+    private String dynamicApiKey;
+    private String dynamicBaseUrl;
+    private String dynamicModel;
+    private int dynamicTimeoutSeconds = 60;
+
+    @PostConstruct
+    public void init() {
+        loadConfig();
+    }
+
+    private void loadConfig() {
+        try {
+            java.io.File file = new java.io.File("ai-config.json");
+            if (file.exists()) {
+                Map<String, Object> config = objectMapper.readValue(file, new TypeReference<Map<String, Object>>() {});
+                if (config.containsKey("apiKey")) this.dynamicApiKey = (String) config.get("apiKey");
+                if (config.containsKey("baseUrl")) this.dynamicBaseUrl = (String) config.get("baseUrl");
+                if (config.containsKey("model")) this.dynamicModel = (String) config.get("model");
+                if (config.containsKey("timeoutSeconds")) this.dynamicTimeoutSeconds = ((Number) config.get("timeoutSeconds")).intValue();
+                log.info("Loaded dynamic AI configuration from ai-config.json");
+            }
+        } catch (Exception e) {
+            log.error("Failed to load dynamic AI configuration", e);
+        }
+    }
+
+    public void saveConfig(String apiKey, String baseUrl, String model, int timeoutSeconds) {
+        this.dynamicApiKey = apiKey;
+        this.dynamicBaseUrl = baseUrl;
+        this.dynamicModel = model;
+        this.dynamicTimeoutSeconds = timeoutSeconds;
+        try {
+            Map<String, Object> config = new HashMap<>();
+            config.put("apiKey", apiKey);
+            config.put("baseUrl", baseUrl);
+            config.put("model", model);
+            config.put("timeoutSeconds", timeoutSeconds);
+            objectMapper.writeValue(new java.io.File("ai-config.json"), config);
+            log.info("Saved dynamic AI configuration to ai-config.json");
+        } catch (Exception e) {
+            log.error("Failed to save dynamic AI configuration", e);
+        }
+    }
+
+    public String getGlobalApiKey() {
+        return (dynamicApiKey != null && !dynamicApiKey.isEmpty()) ? dynamicApiKey : globalApiKey;
+    }
+
+    public String getGlobalBaseUrl() {
+        return (dynamicBaseUrl != null && !dynamicBaseUrl.isEmpty()) ? dynamicBaseUrl : globalBaseUrl;
+    }
+
+    public String getGlobalModel() {
+        return (dynamicModel != null && !dynamicModel.isEmpty()) ? dynamicModel : globalModel;
+    }
+
+    public int getGlobalTimeoutSeconds() {
+        return dynamicTimeoutSeconds > 0 ? dynamicTimeoutSeconds : 60;
+    }
+
     private static final int MAX_TOOL_ITERATIONS = 5;
 
     @ActivateRequestContext
@@ -61,9 +122,10 @@ public class AIChatService {
 
         // 2. Fetch server specific OpenAI config or fallback to global properties
         Server server = bot.getSettingsManager().getSettings(event.getGuild());
-        String apiKey = (server.getAiApiKey() != null && !server.getAiApiKey().isEmpty()) ? server.getAiApiKey() : globalApiKey;
-        String baseUrl = (server.getAiBaseUrl() != null && !server.getAiBaseUrl().isEmpty()) ? server.getAiBaseUrl() : globalBaseUrl;
-        String model = (server.getAiModel() != null && !server.getAiModel().isEmpty()) ? server.getAiModel() : globalModel;
+        String apiKey = (server.getAiApiKey() != null && !server.getAiApiKey().isEmpty()) ? server.getAiApiKey() : getGlobalApiKey();
+        String baseUrl = (server.getAiBaseUrl() != null && !server.getAiBaseUrl().isEmpty()) ? server.getAiBaseUrl() : getGlobalBaseUrl();
+        String model = (server.getAiModel() != null && !server.getAiModel().isEmpty()) ? server.getAiModel() : getGlobalModel();
+        int timeoutSeconds = getGlobalTimeoutSeconds();
         String serverMode = server.getAiMode() != null ? server.getAiMode() : "NORMAL";
 
         // Auto-sanitize trailing /chat or /chat/ from baseUrl
@@ -156,6 +218,8 @@ public class AIChatService {
                 // 8. Construct REST Client dynamically
                 OpenAIClient client = RestClientBuilder.newBuilder()
                         .baseUri(URI.create(baseUrl))
+                        .connectTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
+                        .readTimeout(timeoutSeconds, java.util.concurrent.TimeUnit.SECONDS)
                         .build(OpenAIClient.class);
 
                 // 9. Call OpenAI API
