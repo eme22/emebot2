@@ -23,14 +23,16 @@ public class SetaiCmd extends OwnerCommand {
 
     public SetaiCmd() {
         this.name = "setai";
-        this.help = "Configura dinámicamente los parámetros globales del modelo de IA";
-        this.arguments = "[api-key=xxx] [url=xxx] [model=xxx] [timeout=xxx]";
+        this.help = "Configura dinámicamente los parámetros globales del modelo de IA y prompts del sistema";
+        this.arguments = "[api-key=xxx] [url=xxx] [model=xxx] [timeout=xxx] [prompt-normal=xxx] [prompt-admin=xxx]";
         this.guildOnly = false;
         this.options = Arrays.asList(
             new OptionData(OptionType.STRING, "api-key", "API Key de OpenAI/OpenRouter").setRequired(false),
             new OptionData(OptionType.STRING, "url", "Base URL de la API de IA").setRequired(false),
             new OptionData(OptionType.STRING, "model", "Nombre del modelo de IA").setRequired(false),
-            new OptionData(OptionType.INTEGER, "timeout", "Timeout en segundos").setRequired(false)
+            new OptionData(OptionType.INTEGER, "timeout", "Timeout en segundos").setRequired(false),
+            new OptionData(OptionType.STRING, "prompt-normal", "System prompt para modo normal").setRequired(false),
+            new OptionData(OptionType.STRING, "prompt-admin", "System prompt para modo administración").setRequired(false)
         );
     }
 
@@ -41,11 +43,13 @@ public class SetaiCmd extends OwnerCommand {
         String model = event.optString("model", null);
         OptionMapping timeoutOpt = event.getOption("timeout");
         Integer timeout = timeoutOpt != null ? (int) timeoutOpt.getAsLong() : null;
+        String promptNormal = event.optString("prompt-normal", null);
+        String promptAdmin = event.optString("prompt-admin", null);
 
-        if (apiKey == null && url == null && model == null && timeout == null) {
+        if (apiKey == null && url == null && model == null && timeout == null && promptNormal == null && promptAdmin == null) {
             showSettings(event);
         } else {
-            updateSettings(event, apiKey, url, model, timeout);
+            updateSettings(event, apiKey, url, model, timeout, promptNormal, promptAdmin);
         }
     }
 
@@ -57,50 +61,66 @@ public class SetaiCmd extends OwnerCommand {
             return;
         }
 
-        String apiKey = null;
-        String url = null;
-        String model = null;
-        Integer timeout = null;
+        parseArgsAndSet(args, event);
+    }
 
-        String[] parts = args.split("\\s+");
-        if (parts.length == 4 && !args.contains("=")) {
-            apiKey = parts[0];
-            url = parts[1];
-            model = parts[2];
+    private void parseArgsAndSet(String args, CommandEvent event) {
+        String apiKey = extractValue(args, new String[]{"apikey", "api-key"});
+        String url = extractValue(args, new String[]{"url"});
+        String model = extractValue(args, new String[]{"model"});
+        String timeoutStr = extractValue(args, new String[]{"timeout"});
+        String promptNormal = extractValue(args, new String[]{"prompt-normal"});
+        String promptAdmin = extractValue(args, new String[]{"prompt-admin"});
+
+        Integer timeout = null;
+        if (timeoutStr != null) {
             try {
-                timeout = Integer.parseInt(parts[3]);
+                timeout = Integer.parseInt(timeoutStr);
             } catch (NumberFormatException e) {
                 event.replyError("El timeout debe ser un número entero.");
                 return;
             }
-        } else {
-            for (String part : parts) {
-                if (part.contains("=")) {
-                    String[] kv = part.split("=", 2);
-                    String key = kv[0].toLowerCase();
-                    String val = kv[1];
-                    if (key.equals("apikey") || key.equals("api-key")) {
-                        apiKey = val;
-                    } else if (key.equals("url")) {
-                        url = val;
-                    } else if (key.equals("model")) {
-                        model = val;
-                    } else if (key.equals("timeout")) {
-                        try {
-                            timeout = Integer.parseInt(val);
-                        } catch (NumberFormatException e) {
-                            event.replyError("El timeout debe ser un número entero.");
-                            return;
-                        }
-                    }
-                } else {
-                    event.replyError("Formato incorrecto. Usa `key=value` (ej: `apikey=xxx url=xxx`) o 4 argumentos posicionales.");
+        }
+
+        if (apiKey == null && url == null && model == null && timeout == null && promptNormal == null && promptAdmin == null) {
+            String[] parts = args.split("\\s+");
+            if (parts.length == 4 && !args.contains("=")) {
+                apiKey = parts[0];
+                url = parts[1];
+                model = parts[2];
+                try {
+                    timeout = Integer.parseInt(parts[3]);
+                } catch (NumberFormatException e) {
+                    event.replyError("El timeout debe ser un número entero.");
                     return;
                 }
+            } else {
+                event.replyError("Formato incorrecto. Usa `key=value` (ej: `apikey=xxx url=xxx`) o 4 argumentos posicionales.");
+                return;
             }
         }
 
-        updateSettings(event, apiKey, url, model, timeout);
+        updateSettings(event, apiKey, url, model, timeout, promptNormal, promptAdmin);
+    }
+
+    private String extractValue(String args, String[] keys) {
+        for (String key : keys) {
+            String prefix = key + "=";
+            int idx = args.indexOf(prefix);
+            if (idx != -1) {
+                int start = idx + prefix.length();
+                int end = args.length();
+                String[] allKeys = {"apikey=", "api-key=", "url=", "model=", "timeout=", "prompt-normal=", "prompt-admin="};
+                for (String otherKey : allKeys) {
+                    int nextIdx = args.indexOf(otherKey, start);
+                    if (nextIdx != -1 && nextIdx < end) {
+                        end = nextIdx;
+                    }
+                }
+                return args.substring(start, end).trim();
+            }
+        }
+        return null;
     }
 
     private void showSettings(SlashCommandEvent event) {
@@ -108,13 +128,17 @@ public class SetaiCmd extends OwnerCommand {
         String activeUrl = aiChatService.getGlobalBaseUrl();
         String activeModel = aiChatService.getGlobalModel();
         int activeTimeout = aiChatService.getGlobalTimeoutSeconds();
+        String promptNormal = aiChatService.getGlobalSystemPrompt("normal");
+        String promptAdmin = aiChatService.getGlobalSystemPrompt("admin");
 
         String message = "**Configuración Global de IA Actual:**\n" +
                 "🔑 **API Key:** `" + maskApiKey(activeApiKey) + "`\n" +
                 "🌐 **URL Base:** `" + (activeUrl != null ? activeUrl : "No configurada") + "`\n" +
                 "🤖 **Modelo:** `" + (activeModel != null ? activeModel : "No configurado") + "`\n" +
-                "⏱️ **Timeout:** `" + activeTimeout + " segundos`\n\n" +
-                "💡 *Puedes actualizarla usando `/setai [api-key] [url] [model] [timeout]` o `!setai apikey=xxx ...`*";
+                "⏱️ **Timeout:** `" + activeTimeout + " segundos`\n" +
+                "📝 **System Prompt (Normal):** " + formatPromptPreview(promptNormal) + "\n" +
+                "🛡️ **System Prompt (Admin):** " + formatPromptPreview(promptAdmin) + "\n\n" +
+                "💡 *Puedes actualizarla usando `/setai [api-key] [url] [model] [timeout] [prompt-normal] [prompt-admin]` o `!setai apikey=xxx ...`*";
         event.reply(message).setEphemeral(true).queue();
     }
 
@@ -123,17 +147,21 @@ public class SetaiCmd extends OwnerCommand {
         String activeUrl = aiChatService.getGlobalBaseUrl();
         String activeModel = aiChatService.getGlobalModel();
         int activeTimeout = aiChatService.getGlobalTimeoutSeconds();
+        String promptNormal = aiChatService.getGlobalSystemPrompt("normal");
+        String promptAdmin = aiChatService.getGlobalSystemPrompt("admin");
 
         String message = "**Configuración Global de IA Actual:**\n" +
                 "🔑 **API Key:** `" + maskApiKey(activeApiKey) + "`\n" +
                 "🌐 **URL Base:** `" + (activeUrl != null ? activeUrl : "No configurada") + "`\n" +
                 "🤖 **Modelo:** `" + (activeModel != null ? activeModel : "No configurado") + "`\n" +
-                "⏱️ **Timeout:** `" + activeTimeout + " segundos`\n\n" +
+                "⏱️ **Timeout:** `" + activeTimeout + " segundos`\n" +
+                "📝 **System Prompt (Normal):** " + formatPromptPreview(promptNormal) + "\n" +
+                "🛡️ **System Prompt (Admin):** " + formatPromptPreview(promptAdmin) + "\n\n" +
                 "💡 *Puedes actualizarla usando `!setai apikey=xxx url=xxx ...` o posicionalmente: `!setai <apikey> <url> <model> <timeout>`*";
         event.reply(message);
     }
 
-    private void updateSettings(SlashCommandEvent event, String apiKey, String url, String model, Integer timeout) {
+    private void updateSettings(SlashCommandEvent event, String apiKey, String url, String model, Integer timeout, String promptNormal, String promptAdmin) {
         String newApiKey = apiKey != null ? apiKey : aiChatService.getGlobalApiKey();
         String newUrl = url != null ? url : aiChatService.getGlobalBaseUrl();
         String newModel = model != null ? model : aiChatService.getGlobalModel();
@@ -141,14 +169,26 @@ public class SetaiCmd extends OwnerCommand {
 
         aiChatService.saveConfig(newApiKey, newUrl, newModel, newTimeout);
 
+        if (promptNormal != null) {
+            aiChatService.saveSystemPrompt("normal", promptNormal);
+        }
+        if (promptAdmin != null) {
+            aiChatService.saveSystemPrompt("admin", promptAdmin);
+        }
+
+        String activePromptNormal = aiChatService.getGlobalSystemPrompt("normal");
+        String activePromptAdmin = aiChatService.getGlobalSystemPrompt("admin");
+
         event.reply(event.getClient().getSuccess() + " **Configuración de IA actualizada con éxito:**\n" +
                 "🔑 **API Key:** `" + maskApiKey(newApiKey) + "`\n" +
                 "🌐 **URL Base:** `" + newUrl + "`\n" +
                 "🤖 **Modelo:** `" + newModel + "`\n" +
-                "⏱️ **Timeout:** `" + newTimeout + " segundos`").setEphemeral(true).queue();
+                "⏱️ **Timeout:** `" + newTimeout + " segundos`\n" +
+                "📝 **System Prompt (Normal):** " + formatPromptPreview(activePromptNormal) + "\n" +
+                "🛡️ **System Prompt (Admin):** " + formatPromptPreview(activePromptAdmin)).setEphemeral(true).queue();
     }
 
-    private void updateSettings(CommandEvent event, String apiKey, String url, String model, Integer timeout) {
+    private void updateSettings(CommandEvent event, String apiKey, String url, String model, Integer timeout, String promptNormal, String promptAdmin) {
         String newApiKey = apiKey != null ? apiKey : aiChatService.getGlobalApiKey();
         String newUrl = url != null ? url : aiChatService.getGlobalBaseUrl();
         String newModel = model != null ? model : aiChatService.getGlobalModel();
@@ -156,11 +196,23 @@ public class SetaiCmd extends OwnerCommand {
 
         aiChatService.saveConfig(newApiKey, newUrl, newModel, newTimeout);
 
+        if (promptNormal != null) {
+            aiChatService.saveSystemPrompt("normal", promptNormal);
+        }
+        if (promptAdmin != null) {
+            aiChatService.saveSystemPrompt("admin", promptAdmin);
+        }
+
+        String activePromptNormal = aiChatService.getGlobalSystemPrompt("normal");
+        String activePromptAdmin = aiChatService.getGlobalSystemPrompt("admin");
+
         event.reply(event.getClient().getSuccess() + " **Configuración de IA actualizada con éxito:**\n" +
                 "🔑 **API Key:** `" + maskApiKey(newApiKey) + "`\n" +
                 "🌐 **URL Base:** `" + newUrl + "`\n" +
                 "🤖 **Modelo:** `" + newModel + "`\n" +
-                "⏱️ **Timeout:** `" + newTimeout + " segundos`");
+                "⏱️ **Timeout:** `" + newTimeout + " segundos`\n" +
+                "📝 **System Prompt (Normal):** " + formatPromptPreview(activePromptNormal) + "\n" +
+                "🛡️ **System Prompt (Admin):** " + formatPromptPreview(activePromptAdmin));
     }
 
     private String maskApiKey(String apiKey) {
@@ -171,5 +223,15 @@ public class SetaiCmd extends OwnerCommand {
             return "********";
         }
         return apiKey.substring(0, 7) + "..." + apiKey.substring(apiKey.length() - 4);
+    }
+
+    private String formatPromptPreview(String prompt) {
+        if (prompt == null || prompt.isEmpty()) {
+            return "*Por defecto (sistema)*";
+        }
+        if (prompt.length() <= 60) {
+            return "`" + prompt + "`";
+        }
+        return "`" + prompt.substring(0, 57) + "...`";
     }
 }

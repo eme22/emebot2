@@ -15,7 +15,8 @@ import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
-import jakarta.annotation.PostConstruct;
+import com.eme22.bolo.repository.AIGlobalConfigRepository;
+import jakarta.transaction.Transactional;
 import java.net.URI;
 import java.time.Instant;
 import java.util.*;
@@ -40,6 +41,9 @@ public class AIChatService {
     @Inject
     ObjectMapper objectMapper;
 
+    @Inject
+    AIGlobalConfigRepository aiGlobalConfigRepository;
+
     @ConfigProperty(name = "openai.api-key")
     String globalApiKey;
 
@@ -49,64 +53,52 @@ public class AIChatService {
     @ConfigProperty(name = "openai.model")
     String globalModel;
 
-    private String dynamicApiKey;
-    private String dynamicBaseUrl;
-    private String dynamicModel;
-    private int dynamicTimeoutSeconds = 60;
-
-    @PostConstruct
-    public void init() {
-        loadConfig();
-    }
-
-    private void loadConfig() {
-        try {
-            java.io.File file = new java.io.File("ai-config.json");
-            if (file.exists()) {
-                Map<String, Object> config = objectMapper.readValue(file, new TypeReference<Map<String, Object>>() {});
-                if (config.containsKey("apiKey")) this.dynamicApiKey = (String) config.get("apiKey");
-                if (config.containsKey("baseUrl")) this.dynamicBaseUrl = (String) config.get("baseUrl");
-                if (config.containsKey("model")) this.dynamicModel = (String) config.get("model");
-                if (config.containsKey("timeoutSeconds")) this.dynamicTimeoutSeconds = ((Number) config.get("timeoutSeconds")).intValue();
-                log.info("Loaded dynamic AI configuration from ai-config.json");
-            }
-        } catch (Exception e) {
-            log.error("Failed to load dynamic AI configuration", e);
-        }
-    }
-
+    @Transactional
     public void saveConfig(String apiKey, String baseUrl, String model, int timeoutSeconds) {
-        this.dynamicApiKey = apiKey;
-        this.dynamicBaseUrl = baseUrl;
-        this.dynamicModel = model;
-        this.dynamicTimeoutSeconds = timeoutSeconds;
-        try {
-            Map<String, Object> config = new HashMap<>();
-            config.put("apiKey", apiKey);
-            config.put("baseUrl", baseUrl);
-            config.put("model", model);
-            config.put("timeoutSeconds", timeoutSeconds);
-            objectMapper.writeValue(new java.io.File("ai-config.json"), config);
-            log.info("Saved dynamic AI configuration to ai-config.json");
-        } catch (Exception e) {
-            log.error("Failed to save dynamic AI configuration", e);
+        aiGlobalConfigRepository.setValue("api-key", apiKey);
+        aiGlobalConfigRepository.setValue("url", baseUrl);
+        aiGlobalConfigRepository.setValue("model", model);
+        aiGlobalConfigRepository.setValue("timeout", String.valueOf(timeoutSeconds));
+    }
+
+    @Transactional
+    public void saveSystemPrompt(String mode, String prompt) {
+        String key = "system-prompt-" + mode.toLowerCase();
+        if (prompt == null || "none".equalsIgnoreCase(prompt) || "default".equalsIgnoreCase(prompt)) {
+            aiGlobalConfigRepository.deleteValue(key);
+        } else {
+            aiGlobalConfigRepository.setValue(key, prompt);
         }
     }
 
     public String getGlobalApiKey() {
-        return (dynamicApiKey != null && !dynamicApiKey.isEmpty()) ? dynamicApiKey : globalApiKey;
+        String dbVal = aiGlobalConfigRepository.getValue("api-key");
+        return (dbVal != null && !dbVal.isEmpty()) ? dbVal : globalApiKey;
     }
 
     public String getGlobalBaseUrl() {
-        return (dynamicBaseUrl != null && !dynamicBaseUrl.isEmpty()) ? dynamicBaseUrl : globalBaseUrl;
+        String dbVal = aiGlobalConfigRepository.getValue("url");
+        return (dbVal != null && !dbVal.isEmpty()) ? dbVal : globalBaseUrl;
     }
 
     public String getGlobalModel() {
-        return (dynamicModel != null && !dynamicModel.isEmpty()) ? dynamicModel : globalModel;
+        String dbVal = aiGlobalConfigRepository.getValue("model");
+        return (dbVal != null && !dbVal.isEmpty()) ? dbVal : globalModel;
     }
 
     public int getGlobalTimeoutSeconds() {
-        return dynamicTimeoutSeconds > 0 ? dynamicTimeoutSeconds : 60;
+        String dbVal = aiGlobalConfigRepository.getValue("timeout");
+        if (dbVal != null && !dbVal.isEmpty()) {
+            try {
+                return Integer.parseInt(dbVal);
+            } catch (NumberFormatException ignored) {}
+        }
+        return 60;
+    }
+
+    public String getGlobalSystemPrompt(String mode) {
+        String key = "system-prompt-" + mode.toLowerCase();
+        return aiGlobalConfigRepository.getValue(key);
     }
 
     private static final int MAX_TOOL_ITERATIONS = 5;
@@ -330,6 +322,24 @@ public class AIChatService {
     }
 
     private String getSystemPrompt(String mode, String serverName, String userName, String botName) {
+        String template = getGlobalSystemPrompt(mode);
+        if (template != null && !template.isEmpty()) {
+            if (template.contains("{botName}") || template.contains("{serverName}") || template.contains("{userName}")) {
+                return template.replace("{botName}", botName)
+                               .replace("{serverName}", serverName)
+                               .replace("{userName}", userName);
+            } else {
+                try {
+                    return String.format(template, botName, serverName, userName);
+                } catch (Exception e) {
+                    log.error("Error formatting custom system prompt template", e);
+                    return template.replaceFirst("%s", botName)
+                                   .replaceFirst("%s", serverName)
+                                   .replaceFirst("%s", userName);
+                }
+            }
+        }
+
         if ("ADMIN".equalsIgnoreCase(mode)) {
             return String.format(
                 "Eres %s, el Asistente de Administración Inteligente para el servidor de Discord '%s'. Estás hablando con el usuario '%s'.\n" +
