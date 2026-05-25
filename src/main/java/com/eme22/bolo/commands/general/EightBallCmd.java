@@ -37,7 +37,7 @@ public class EightBallCmd extends BaseCommand {
          event.reply("Â¡Escribe una pregunta!").complete();
       } else {
          EmbedBuilder response = new EmbedBuilder()
-            .setTitle("PregÃºntale a " + event.getGuild().getSelfMember().getUser().getName())
+            .setTitle("Pregúntale a " + event.getGuild().getSelfMember().getEffectiveName())
             .setDescription("**" + question + "**\n> " + settings.getRandomAnswer());
          event.replyEmbeds(response.build(), new MessageEmbed[0]).queue();
       }
@@ -50,7 +50,7 @@ public class EightBallCmd extends BaseCommand {
          event.reply("Â¡Escribe una pregunta!");
       } else {
          EmbedBuilder response = new EmbedBuilder()
-            .setTitle("PregÃºntale a " + event.getGuild().getSelfMember().getUser().getName())
+            .setTitle("Pregúntale a " + event.getGuild().getSelfMember().getEffectiveName())
             .setDescription("**" + question + "**\n> " + settings.getRandomAnswer());
          event.reply(response.build());
       }

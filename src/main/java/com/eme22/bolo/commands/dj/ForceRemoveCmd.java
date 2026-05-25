@@ -58,7 +58,7 @@ public class ForceRemoveCmd extends DJCommand {
 
                for (int i = 0; i < found.size() && i < 4; i++) {
                   Member member = found.get(i);
-                  builder.addChoice("**" + member.getUser().getName() + "**#" + member.getUser().getDiscriminator());
+                  builder.addChoice("**" + member.getEffectiveName() + "**");
                }
 
                ((Builder)((Builder)((Builder)builder.setSelection((msg, ix) -> this.removeAllEntries(found.get(ix - 1).getUser(), event))

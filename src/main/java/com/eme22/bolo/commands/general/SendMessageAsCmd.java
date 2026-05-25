@@ -41,15 +41,18 @@ public class SendMessageAsCmd extends BaseCommand {
    }
 
    public void execute(SlashCommandEvent event) {
-      String message = event.getOption("mensaje").getAsString();
-      User usuario = event.getOption("usuario").getAsUser();
+      event.deferReply(true).queue(hook -> {
+         String message = event.getOption("mensaje").getAsString();
+         User usuario = event.getOption("usuario").getAsUser();
 
-      try {
-         this.sendFakeMessage(usuario, message, event.getTextChannel());
-         event.reply(event.getClient().getSuccess() + " Mensaje Enviado").setEphemeral(true).queue();
-      } catch (IOException var5) {
-         var5.printStackTrace();
-      }
+         try {
+            this.sendFakeMessage(usuario, message, event.getTextChannel());
+            hook.editOriginal(event.getClient().getSuccess() + " Mensaje Enviado").queue();
+         } catch (IOException e) {
+            e.printStackTrace();
+            hook.editOriginal(event.getClient().getError() + " Error al enviar el mensaje").queue();
+         }
+      });
    }
 
    private void sendFakeMessage(User usuario, String message, TextChannel textChannel) throws IOException {

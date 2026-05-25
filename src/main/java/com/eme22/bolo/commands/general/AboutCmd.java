@@ -58,7 +58,8 @@ public class AboutCmd extends BaseCommand {
 
       EmbedBuilder builder = new EmbedBuilder();
       builder.setColor(event.isFromType(ChannelType.TEXT) ? event.getGuild().getSelfMember().getColorRaw() : this.color);
-      builder.setAuthor("Informacion de " + event.getJDA().getSelfUser().getName() + "!", null, event.getJDA().getSelfUser().getAvatarUrl());
+      String botName = event.getGuild() != null ? event.getGuild().getSelfMember().getEffectiveName() : event.getJDA().getSelfUser().getName();
+      builder.setAuthor("Informacion de " + botName + "!", null, event.getJDA().getSelfUser().getAvatarUrl());
       boolean join = event.getClient().getServerInvite() != null && !event.getClient().getServerInvite().isEmpty();
       boolean inv = !oauthLink.isEmpty();
       String invline = "\n"
@@ -70,7 +71,7 @@ public class AboutCmd extends BaseCommand {
          : event.getJDA().getUserById(event.getClient().getOwnerId()).getName();
       StringBuilder descr = new StringBuilder()
          .append("Hola soy **")
-         .append(event.getJDA().getSelfUser().getName())
+         .append(botName)
          .append("**, ")
          .append(this.description)
          .append("\nI ")
@@ -143,7 +144,8 @@ public class AboutCmd extends BaseCommand {
 
       EmbedBuilder builder = new EmbedBuilder();
       builder.setColor(event.isFromType(ChannelType.TEXT) ? event.getGuild().getSelfMember().getColorRaw() : this.color);
-      builder.setAuthor("Informacion de " + event.getSelfUser().getName() + "!", null, event.getSelfUser().getAvatarUrl());
+      String botName = event.getGuild() != null ? event.getGuild().getSelfMember().getEffectiveName() : event.getSelfUser().getName();
+      builder.setAuthor("Informacion de " + botName + "!", null, event.getSelfUser().getAvatarUrl());
       boolean join = event.getClient().getServerInvite() != null && !event.getClient().getServerInvite().isEmpty();
       boolean inv = !oauthLink.isEmpty();
       String invline = "\n"
@@ -155,7 +157,7 @@ public class AboutCmd extends BaseCommand {
          : event.getJDA().getUserById(event.getClient().getOwnerId()).getName();
       StringBuilder descr = new StringBuilder()
          .append("Hola soy **")
-         .append(event.getSelfUser().getName())
+         .append(botName)
          .append("**, ")
          .append(this.description)
          .append("\nI ")

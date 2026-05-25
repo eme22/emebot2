@@ -39,7 +39,7 @@ public class SettingsCmd extends BaseCommand {
    @Override
    public void execute(SlashCommandEvent event) {
       Server s = (Server)event.getClient().getSettingsFor(event.getGuild());
-      String builder = "\ud83c\udfa7 **" + FormatUtil.filter(event.getGuild().getSelfMember().getUser().getName()) + "** settings:";
+      String builder = "\ud83c\udfa7 **" + FormatUtil.filter(event.getGuild().getSelfMember().getEffectiveName()) + "** settings:";
       TextChannel wchan = event.getGuild().getTextChannelById(s.getBienvenidasChannelId());
       TextChannel dchan = event.getGuild().getTextChannelById(s.getDespedidasChannelId());
       TextChannel tchan = event.getGuild().getTextChannelById(s.getTextChannelId());
@@ -86,7 +86,7 @@ public class SettingsCmd extends BaseCommand {
    @Override
    public void execute(CommandEvent event) {
       Server s = (Server)event.getClient().getSettingsFor(event.getGuild());
-      String builder = "\ud83c\udfa7 **" + FormatUtil.filter(event.getSelfUser().getName()) + "** settings:";
+      String builder = "\ud83c\udfa7 **" + FormatUtil.filter(event.getSelfMember().getEffectiveName()) + "** settings:";
       TextChannel wchan = event.getGuild().getTextChannelById(s.getBienvenidasChannelId());
       TextChannel dchan = event.getGuild().getTextChannelById(s.getDespedidasChannelId());
       TextChannel tchan = event.getGuild().getTextChannelById(s.getTextChannelId());

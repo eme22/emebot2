@@ -170,6 +170,31 @@ public class Server extends PanacheEntityBase implements GuildSettingsProvider {
    @Column(name = "server_backupenabled", nullable = false)
    private boolean backupEnabled = false;
 
+   @Builder.Default
+   @Column(name = "server_ai_enabled", nullable = false)
+   private boolean aiEnabled = false;
+
+   @Builder.Default
+   @Column(name = "server_ai_channel_id")
+   private Long aiChannelId = 0L;
+
+   @Builder.Default
+   @Column(name = "server_ai_mode")
+   private String aiMode = "NORMAL";
+
+   @Column(name = "server_ai_model")
+   private String aiModel;
+
+   @Column(name = "server_ai_base_url")
+   private String aiBaseUrl;
+
+   @Column(name = "server_ai_api_key")
+   private String aiApiKey;
+
+   public long getAiChannelId() {
+      return this.aiChannelId == null ? 0L : this.aiChannelId;
+   }
+
    @Override
    public int hashCode() {
       return this.getClass().hashCode();
