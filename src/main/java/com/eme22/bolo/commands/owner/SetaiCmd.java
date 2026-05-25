@@ -24,9 +24,10 @@ public class SetaiCmd extends OwnerCommand {
     public SetaiCmd() {
         this.name = "setai";
         this.help = "Configura dinámicamente los parámetros globales del modelo de IA y prompts del sistema";
-        this.arguments = "[api-key=xxx] [url=xxx] [model=xxx] [timeout=xxx] [prompt-normal=xxx] [prompt-admin=xxx]";
+        this.arguments = "[index=1-10] [api-key=xxx] [url=xxx] [model=xxx] [timeout=xxx] [prompt-normal=xxx] [prompt-admin=xxx]";
         this.guildOnly = false;
         this.options = Arrays.asList(
+            new OptionData(OptionType.INTEGER, "index", "Índice de la configuración de reserva (1-10) o vacío para la principal").setRequired(false),
             new OptionData(OptionType.STRING, "api-key", "API Key de OpenAI/OpenRouter").setRequired(false),
             new OptionData(OptionType.STRING, "url", "Base URL de la API de IA").setRequired(false),
             new OptionData(OptionType.STRING, "model", "Nombre del modelo de IA").setRequired(false),
@@ -38,6 +39,9 @@ public class SetaiCmd extends OwnerCommand {
 
     @Override
     public void execute(SlashCommandEvent event) {
+        OptionMapping indexOpt = event.getOption("index");
+        Integer index = indexOpt != null ? (int) indexOpt.getAsLong() : null;
+
         String apiKey = event.optString("api-key", null);
         String url = event.optString("url", null);
         String model = event.optString("model", null);
@@ -46,10 +50,15 @@ public class SetaiCmd extends OwnerCommand {
         String promptNormal = event.optString("prompt-normal", null);
         String promptAdmin = event.optString("prompt-admin", null);
 
-        if (apiKey == null && url == null && model == null && timeout == null && promptNormal == null && promptAdmin == null) {
+        if (index != null && (index < 1 || index > 10)) {
+            event.reply("❌ El índice debe estar entre 1 y 10.").setEphemeral(true).queue();
+            return;
+        }
+
+        if (index == null && apiKey == null && url == null && model == null && timeout == null && promptNormal == null && promptAdmin == null) {
             showSettings(event);
         } else {
-            updateSettings(event, apiKey, url, model, timeout, promptNormal, promptAdmin);
+            updateSettings(event, index, apiKey, url, model, timeout, promptNormal, promptAdmin);
         }
     }
 
@@ -65,12 +74,27 @@ public class SetaiCmd extends OwnerCommand {
     }
 
     private void parseArgsAndSet(String args, CommandEvent event) {
+        String indexStr = extractValue(args, new String[]{"index"});
         String apiKey = extractValue(args, new String[]{"apikey", "api-key"});
         String url = extractValue(args, new String[]{"url"});
         String model = extractValue(args, new String[]{"model"});
         String timeoutStr = extractValue(args, new String[]{"timeout"});
         String promptNormal = extractValue(args, new String[]{"prompt-normal"});
         String promptAdmin = extractValue(args, new String[]{"prompt-admin"});
+
+        Integer index = null;
+        if (indexStr != null) {
+            try {
+                index = Integer.parseInt(indexStr);
+                if (index < 1 || index > 10) {
+                    event.replyError("El índice debe estar entre 1 y 10.");
+                    return;
+                }
+            } catch (NumberFormatException e) {
+                event.replyError("El índice debe ser un número entero.");
+                return;
+            }
+        }
 
         Integer timeout = null;
         if (timeoutStr != null) {
@@ -82,7 +106,7 @@ public class SetaiCmd extends OwnerCommand {
             }
         }
 
-        if (apiKey == null && url == null && model == null && timeout == null && promptNormal == null && promptAdmin == null) {
+        if (index == null && apiKey == null && url == null && model == null && timeout == null && promptNormal == null && promptAdmin == null) {
             String[] parts = args.split("\\s+");
             if (parts.length == 4 && !args.contains("=")) {
                 apiKey = parts[0];
@@ -100,7 +124,7 @@ public class SetaiCmd extends OwnerCommand {
             }
         }
 
-        updateSettings(event, apiKey, url, model, timeout, promptNormal, promptAdmin);
+        updateSettings(event, index, apiKey, url, model, timeout, promptNormal, promptAdmin);
     }
 
     private String extractValue(String args, String[] keys) {
@@ -110,7 +134,7 @@ public class SetaiCmd extends OwnerCommand {
             if (idx != -1) {
                 int start = idx + prefix.length();
                 int end = args.length();
-                String[] allKeys = {"apikey=", "api-key=", "url=", "model=", "timeout=", "prompt-normal=", "prompt-admin="};
+                String[] allKeys = {"index=", "apikey=", "api-key=", "url=", "model=", "timeout=", "prompt-normal=", "prompt-admin="};
                 for (String otherKey : allKeys) {
                     int nextIdx = args.indexOf(otherKey, start);
                     if (nextIdx != -1 && nextIdx < end) {
@@ -131,14 +155,30 @@ public class SetaiCmd extends OwnerCommand {
         String promptNormal = aiChatService.getGlobalSystemPrompt("normal");
         String promptAdmin = aiChatService.getGlobalSystemPrompt("admin");
 
+        StringBuilder backupBuilder = new StringBuilder();
+        java.util.List<com.eme22.bolo.ai.AIChatService.AIConfig> backups = aiChatService.getBackupConfigs(activeUrl, activeModel, activeTimeout);
+        if (!backups.isEmpty()) {
+            backupBuilder.append("\n**Configuraciones de Reserva (Backups) Activas:**\n");
+            for (com.eme22.bolo.ai.AIChatService.AIConfig backup : backups) {
+                backupBuilder.append("🔄 **Reserva ").append(backup.getIndex()).append(":** ")
+                        .append("🔑 API Key: `").append(maskApiKey(backup.getApiKey())).append("` | ")
+                        .append("🤖 Modelo: `").append(backup.getModel()).append("` | ")
+                        .append("🌐 URL: `").append(backup.getBaseUrl()).append("` | ")
+                        .append("⏱️ Timeout: `").append(backup.getTimeoutSeconds()).append("s`\n");
+            }
+        } else {
+            backupBuilder.append("\n*No hay configuraciones de reserva activas. Configura una usando `/setai index=1 api-key=...`*");
+        }
+
         String message = "**Configuración Global de IA Actual:**\n" +
                 "🔑 **API Key:** `" + maskApiKey(activeApiKey) + "`\n" +
                 "🌐 **URL Base:** `" + (activeUrl != null ? activeUrl : "No configurada") + "`\n" +
                 "🤖 **Modelo:** `" + (activeModel != null ? activeModel : "No configurado") + "`\n" +
                 "⏱️ **Timeout:** `" + activeTimeout + " segundos`\n" +
                 "📝 **System Prompt (Normal):** " + formatPromptPreview(promptNormal) + "\n" +
-                "🛡️ **System Prompt (Admin):** " + formatPromptPreview(promptAdmin) + "\n\n" +
-                "💡 *Puedes actualizarla usando `/setai [api-key] [url] [model] [timeout] [prompt-normal] [prompt-admin]` o `!setai apikey=xxx ...`*";
+                "🛡️ **System Prompt (Admin):** " + formatPromptPreview(promptAdmin) + "\n" +
+                backupBuilder.toString() + "\n\n" +
+                "💡 *Puedes actualizarla usando `/setai [index] [api-key] [url] [model] [timeout] [prompt-normal] [prompt-admin]` o `!setai apikey=xxx ...`*";
         event.reply(message).setEphemeral(true).queue();
     }
 
@@ -150,18 +190,62 @@ public class SetaiCmd extends OwnerCommand {
         String promptNormal = aiChatService.getGlobalSystemPrompt("normal");
         String promptAdmin = aiChatService.getGlobalSystemPrompt("admin");
 
+        StringBuilder backupBuilder = new StringBuilder();
+        java.util.List<com.eme22.bolo.ai.AIChatService.AIConfig> backups = aiChatService.getBackupConfigs(activeUrl, activeModel, activeTimeout);
+        if (!backups.isEmpty()) {
+            backupBuilder.append("\n**Configuraciones de Reserva (Backups) Activas:**\n");
+            for (com.eme22.bolo.ai.AIChatService.AIConfig backup : backups) {
+                backupBuilder.append("🔄 **Reserva ").append(backup.getIndex()).append(":** ")
+                        .append("🔑 API Key: `").append(maskApiKey(backup.getApiKey())).append("` | ")
+                        .append("🤖 Modelo: `").append(backup.getModel()).append("` | ")
+                        .append("🌐 URL: `").append(backup.getBaseUrl()).append("` | ")
+                        .append("⏱️ Timeout: `").append(backup.getTimeoutSeconds()).append("s`\n");
+            }
+        } else {
+            backupBuilder.append("\n*No hay configuraciones de reserva activas. Configura una usando `!setai index=1 apikey=...`*");
+        }
+
         String message = "**Configuración Global de IA Actual:**\n" +
                 "🔑 **API Key:** `" + maskApiKey(activeApiKey) + "`\n" +
                 "🌐 **URL Base:** `" + (activeUrl != null ? activeUrl : "No configurada") + "`\n" +
                 "🤖 **Modelo:** `" + (activeModel != null ? activeModel : "No configurado") + "`\n" +
                 "⏱️ **Timeout:** `" + activeTimeout + " segundos`\n" +
                 "📝 **System Prompt (Normal):** " + formatPromptPreview(promptNormal) + "\n" +
-                "🛡️ **System Prompt (Admin):** " + formatPromptPreview(promptAdmin) + "\n\n" +
+                "🛡️ **System Prompt (Admin):** " + formatPromptPreview(promptAdmin) + "\n" +
+                backupBuilder.toString() + "\n\n" +
                 "💡 *Puedes actualizarla usando `!setai apikey=xxx url=xxx ...` o posicionalmente: `!setai <apikey> <url> <model> <timeout>`*";
         event.reply(message);
     }
 
-    private void updateSettings(SlashCommandEvent event, String apiKey, String url, String model, Integer timeout, String promptNormal, String promptAdmin) {
+    private void updateSettings(SlashCommandEvent event, Integer index, String apiKey, String url, String model, Integer timeout, String promptNormal, String promptAdmin) {
+        if (index != null) {
+            aiChatService.saveBackupConfig(index, apiKey, url, model, timeout);
+            if (apiKey != null && ("none".equalsIgnoreCase(apiKey) || "clear".equalsIgnoreCase(apiKey))) {
+                event.reply(event.getClient().getSuccess() + " **Configuración de reserva " + index + " eliminada con éxito.**").setEphemeral(true).queue();
+            } else {
+                java.util.List<com.eme22.bolo.ai.AIChatService.AIConfig> currentBackups = aiChatService.getBackupConfigs(
+                    aiChatService.getGlobalBaseUrl(),
+                    aiChatService.getGlobalModel(),
+                    aiChatService.getGlobalTimeoutSeconds()
+                );
+                com.eme22.bolo.ai.AIChatService.AIConfig updated = currentBackups.stream()
+                    .filter(b -> b.getIndex() == index)
+                    .findFirst()
+                    .orElse(null);
+
+                if (updated != null) {
+                    event.reply(event.getClient().getSuccess() + " **Configuración de reserva " + index + " actualizada con éxito:**\n" +
+                            "🔑 **API Key:** `" + maskApiKey(updated.getApiKey()) + "`\n" +
+                            "🌐 **URL Base:** `" + updated.getBaseUrl() + "`\n" +
+                            "🤖 **Modelo:** `" + updated.getModel() + "`\n" +
+                            "⏱️ **Timeout:** `" + updated.getTimeoutSeconds() + " segundos`").setEphemeral(true).queue();
+                } else {
+                    event.reply(event.getClient().getSuccess() + " **Configuración de reserva " + index + " actualizada con éxito.**").setEphemeral(true).queue();
+                }
+            }
+            return;
+        }
+
         String newApiKey = apiKey != null ? apiKey : aiChatService.getGlobalApiKey();
         String newUrl = url != null ? url : aiChatService.getGlobalBaseUrl();
         String newModel = model != null ? model : aiChatService.getGlobalModel();
@@ -188,7 +272,35 @@ public class SetaiCmd extends OwnerCommand {
                 "🛡️ **System Prompt (Admin):** " + formatPromptPreview(activePromptAdmin)).setEphemeral(true).queue();
     }
 
-    private void updateSettings(CommandEvent event, String apiKey, String url, String model, Integer timeout, String promptNormal, String promptAdmin) {
+    private void updateSettings(CommandEvent event, Integer index, String apiKey, String url, String model, Integer timeout, String promptNormal, String promptAdmin) {
+        if (index != null) {
+            aiChatService.saveBackupConfig(index, apiKey, url, model, timeout);
+            if (apiKey != null && ("none".equalsIgnoreCase(apiKey) || "clear".equalsIgnoreCase(apiKey))) {
+                event.reply(event.getClient().getSuccess() + " **Configuración de reserva " + index + " eliminada con éxito.**");
+            } else {
+                java.util.List<com.eme22.bolo.ai.AIChatService.AIConfig> currentBackups = aiChatService.getBackupConfigs(
+                    aiChatService.getGlobalBaseUrl(),
+                    aiChatService.getGlobalModel(),
+                    aiChatService.getGlobalTimeoutSeconds()
+                );
+                com.eme22.bolo.ai.AIChatService.AIConfig updated = currentBackups.stream()
+                    .filter(b -> b.getIndex() == index)
+                    .findFirst()
+                    .orElse(null);
+
+                if (updated != null) {
+                    event.reply(event.getClient().getSuccess() + " **Configuración de reserva " + index + " actualizada con éxito:**\n" +
+                            "🔑 **API Key:** `" + maskApiKey(updated.getApiKey()) + "`\n" +
+                            "🌐 **URL Base:** `" + updated.getBaseUrl() + "`\n" +
+                            "🤖 **Modelo:** `" + updated.getModel() + "`\n" +
+                            "⏱️ **Timeout:** `" + updated.getTimeoutSeconds() + " segundos`");
+                } else {
+                    event.reply(event.getClient().getSuccess() + " **Configuración de reserva " + index + " actualizada con éxito.**");
+                }
+            }
+            return;
+        }
+
         String newApiKey = apiKey != null ? apiKey : aiChatService.getGlobalApiKey();
         String newUrl = url != null ? url : aiChatService.getGlobalBaseUrl();
         String newModel = model != null ? model : aiChatService.getGlobalModel();

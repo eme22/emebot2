@@ -62,6 +62,94 @@ public class AIChatService {
     }
 
     @Transactional
+    public void saveBackupConfig(int index, String apiKey, String baseUrl, String model, Integer timeoutSeconds) {
+        String prefix = "backup-" + index + "-";
+        
+        // 1. If explicit deletion is requested via "none" or "clear"
+        if ("none".equalsIgnoreCase(apiKey) || "clear".equalsIgnoreCase(apiKey)) {
+            aiGlobalConfigRepository.deleteValue(prefix + "api-key");
+            aiGlobalConfigRepository.deleteValue(prefix + "url");
+            aiGlobalConfigRepository.deleteValue(prefix + "model");
+            aiGlobalConfigRepository.deleteValue(prefix + "timeout");
+            return;
+        }
+
+        // 2. Fetch existing persisted values
+        String existingApiKey = aiGlobalConfigRepository.getValue(prefix + "api-key");
+        String existingUrl = aiGlobalConfigRepository.getValue(prefix + "url");
+        String existingModel = aiGlobalConfigRepository.getValue(prefix + "model");
+        String existingTimeout = aiGlobalConfigRepository.getValue(prefix + "timeout");
+
+        // 3. Determine final values to save
+        String finalApiKey = (apiKey != null) ? apiKey : existingApiKey;
+        
+        // If there's no API key at all, we can't have a valid backup config, so just return
+        if (finalApiKey == null || finalApiKey.isEmpty()) {
+            return;
+        }
+
+        String finalUrl = null;
+        if (baseUrl != null) {
+            finalUrl = ("none".equalsIgnoreCase(baseUrl) || "clear".equalsIgnoreCase(baseUrl)) ? null : baseUrl;
+        } else {
+            finalUrl = existingUrl;
+        }
+
+        String finalModel = null;
+        if (model != null) {
+            finalModel = ("none".equalsIgnoreCase(model) || "clear".equalsIgnoreCase(model)) ? null : model;
+        } else {
+            finalModel = existingModel;
+        }
+
+        String finalTimeout = null;
+        if (timeoutSeconds != null) {
+            finalTimeout = String.valueOf(timeoutSeconds);
+        } else {
+            finalTimeout = existingTimeout;
+        }
+
+        // 4. Persist to DB
+        aiGlobalConfigRepository.setValue(prefix + "api-key", finalApiKey);
+        
+        if (finalUrl != null) aiGlobalConfigRepository.setValue(prefix + "url", finalUrl);
+        else aiGlobalConfigRepository.deleteValue(prefix + "url");
+        
+        if (finalModel != null) aiGlobalConfigRepository.setValue(prefix + "model", finalModel);
+        else aiGlobalConfigRepository.deleteValue(prefix + "model");
+        
+        if (finalTimeout != null) aiGlobalConfigRepository.setValue(prefix + "timeout", finalTimeout);
+        else aiGlobalConfigRepository.deleteValue(prefix + "timeout");
+    }
+
+    public List<AIConfig> getBackupConfigs(String defaultUrl, String defaultModel, int defaultTimeout) {
+        List<AIConfig> list = new ArrayList<>();
+        for (int i = 1; i <= 10; i++) {
+            String prefix = "backup-" + i + "-";
+            String key = aiGlobalConfigRepository.getValue(prefix + "api-key");
+            if (key != null && !key.isEmpty() && !"none".equalsIgnoreCase(key) && !"clear".equalsIgnoreCase(key)) {
+                String url = aiGlobalConfigRepository.getValue(prefix + "url");
+                if (url == null || url.isEmpty()) {
+                    url = defaultUrl;
+                }
+                String model = aiGlobalConfigRepository.getValue(prefix + "model");
+                if (model == null || model.isEmpty()) {
+                    model = defaultModel;
+                }
+                int timeout = defaultTimeout;
+                String timeoutStr = aiGlobalConfigRepository.getValue(prefix + "timeout");
+                if (timeoutStr != null && !timeoutStr.isEmpty()) {
+                    try {
+                        timeout = Integer.parseInt(timeoutStr);
+                    } catch (NumberFormatException ignored) {}
+                }
+                list.add(new AIConfig(i, key, url, model, timeout));
+            }
+        }
+        return list;
+    }
+
+    @Transactional
     public void saveSystemPrompt(String mode, String prompt) {
         String key = "system-prompt-" + mode.toLowerCase();
         if (prompt == null || "none".equalsIgnoreCase(prompt) || "default".equalsIgnoreCase(prompt)) {
@@ -129,8 +217,15 @@ public class AIChatService {
             }
         }
 
-        if (apiKey == null || "none".equalsIgnoreCase(apiKey)) {
-            return "❌ El servicio de IA no está configurado. Un administrador debe configurar la API Key con `/ai setup`.";
+        List<AIConfig> candidateConfigs = new ArrayList<>();
+        candidateConfigs.add(new AIConfig(0, apiKey, baseUrl, model, timeoutSeconds));
+        candidateConfigs.addAll(getBackupConfigs(getGlobalBaseUrl(), getGlobalModel(), getGlobalTimeoutSeconds()));
+
+        // Filter out candidate configurations that lack an API key
+        candidateConfigs.removeIf(c -> c.getApiKey() == null || c.getApiKey().isEmpty() || "none".equalsIgnoreCase(c.getApiKey()));
+
+        if (candidateConfigs.isEmpty()) {
+            return "❌ El servicio de IA no está configurado. Un administrador debe configurar la API Key con `/ai setup` o `/setai`.";
         }
 
         // 3. Save User Message in persistent DB history
@@ -207,18 +302,61 @@ public class AIChatService {
 
                 OpenAIDTO.ChatCompletionRequest request = requestBuilder.build();
 
-                // 8. Construct REST Client dynamically
-                OpenAIClient client = RestClientBuilder.newBuilder()
-                        .baseUri(URI.create(baseUrl))
-                        .connectTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
-                        .readTimeout(timeoutSeconds, java.util.concurrent.TimeUnit.SECONDS)
-                        .build(OpenAIClient.class);
+                OpenAIDTO.ChatCompletionResponse response = null;
+                Exception lastException = null;
+                AIConfig successfulConfig = null;
 
-                // 9. Call OpenAI API
-                OpenAIDTO.ChatCompletionResponse response = client.chatCompletion("Bearer " + apiKey, request);
+                for (AIConfig candidate : candidateConfigs) {
+                    try {
+                        String candidateApiKey = candidate.getApiKey();
+                        String candidateBaseUrl = candidate.getBaseUrl();
+                        String candidateModel = candidate.getModel();
+                        int candidateTimeout = candidate.getTimeoutSeconds();
 
-                if (response.getChoices() == null || response.getChoices().isEmpty()) {
-                    return "❌ No recibí una respuesta válida del proveedor de Inteligencia Artificial.";
+                        // Auto-sanitize trailing /chat or /chat/ from candidateBaseUrl
+                        if (candidateBaseUrl != null) {
+                            if (candidateBaseUrl.endsWith("/chat/")) {
+                                candidateBaseUrl = candidateBaseUrl.substring(0, candidateBaseUrl.length() - 6);
+                            } else if (candidateBaseUrl.endsWith("/chat")) {
+                                candidateBaseUrl = candidateBaseUrl.substring(0, candidateBaseUrl.length() - 5);
+                            }
+                        }
+
+                        // Override request model with candidate model
+                        request.setModel(candidateModel);
+
+                        // 8. Construct REST Client dynamically
+                        OpenAIClient client = RestClientBuilder.newBuilder()
+                                .baseUri(URI.create(candidateBaseUrl))
+                                .connectTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
+                                .readTimeout(candidateTimeout, java.util.concurrent.TimeUnit.SECONDS)
+                                .build(OpenAIClient.class);
+
+                        // 9. Call OpenAI API
+                        response = client.chatCompletion("Bearer " + candidateApiKey, request);
+
+                        if (response != null && response.getChoices() != null && !response.getChoices().isEmpty()) {
+                            successfulConfig = candidate;
+                            break;
+                        }
+                    } catch (Exception e) {
+                        log.warn("Error calling AI config (Index " + candidate.getIndex() + ", Model=" + candidate.getModel() + ", URL=" + candidate.getBaseUrl() + "): " + e.getMessage() + ". Trying next backup.");
+                        lastException = e;
+                    }
+                }
+
+                if (response == null || response.getChoices() == null || response.getChoices().isEmpty()) {
+                    if (lastException != null) {
+                        return "❌ Todos los proveedores de IA configurados fallaron. Último error: " + lastException.getMessage();
+                    }
+                    return "❌ No recibí una respuesta válida de ninguno de los proveedores de Inteligencia Artificial configurados.";
+                }
+
+                // If fallback occurred, log it and reorder candidateConfigs to place successfulConfig at index 0
+                if (successfulConfig != null && candidateConfigs.indexOf(successfulConfig) > 0) {
+                    log.info("Primary AI failed; fell back to backup config (Index " + successfulConfig.getIndex() + ", Model=" + successfulConfig.getModel() + ", URL=" + successfulConfig.getBaseUrl() + ")");
+                    candidateConfigs.remove(successfulConfig);
+                    candidateConfigs.add(0, successfulConfig);
                 }
 
                 OpenAIDTO.Choice choice = response.getChoices().get(0);
@@ -367,5 +505,27 @@ public class AIChatService {
                 botName, serverName, userName
             );
         }
+    }
+
+    public static class AIConfig {
+        private final int index;
+        private final String apiKey;
+        private final String baseUrl;
+        private final String model;
+        private final int timeoutSeconds;
+
+        public AIConfig(int index, String apiKey, String baseUrl, String model, int timeoutSeconds) {
+            this.index = index;
+            this.apiKey = apiKey;
+            this.baseUrl = baseUrl;
+            this.model = model;
+            this.timeoutSeconds = timeoutSeconds;
+        }
+
+        public int getIndex() { return index; }
+        public String getApiKey() { return apiKey; }
+        public String getBaseUrl() { return baseUrl; }
+        public String getModel() { return model; }
+        public int getTimeoutSeconds() { return timeoutSeconds; }
     }
 }
