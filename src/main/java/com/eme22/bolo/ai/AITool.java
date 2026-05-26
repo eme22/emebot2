@@ -9,7 +9,6 @@ public interface AITool {
     String getName();
     String getDescription();
     OpenAIDTO.Tool getDefinition();
-    String getRequiredMode(); // "NORMAL" or "ADMIN"
     List<Permission> getRequiredUserPermissions();
     String execute(MessageReceivedEvent event, Map<String, Object> arguments) throws Exception;
 }

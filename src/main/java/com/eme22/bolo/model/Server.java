@@ -182,11 +182,7 @@ public class Server extends PanacheEntityBase implements GuildSettingsProvider {
    @Column(name = "server_ai_channel_id")
    private Long aiChannelId = 0L;
 
-   @Builder.Default
-   @Column(name = "server_ai_mode")
-   private String aiMode = "NORMAL";
-
-   @Column(name = "server_ai_model")
+    @Column(name = "server_ai_model")
    private String aiModel;
 
    @Column(name = "server_ai_base_url")

@@ -70,11 +70,6 @@ public class GeneralTools {
             }
 
             @Override
-            public String getRequiredMode() {
-                return "NORMAL";
-            }
-
-            @Override
             public List<Permission> getRequiredUserPermissions() {
                 return Collections.emptyList();
             }
@@ -116,11 +111,6 @@ public class GeneralTools {
                                         .build())
                                 .build())
                         .build();
-            }
-
-            @Override
-            public String getRequiredMode() {
-                return "NORMAL";
             }
 
             @Override
@@ -172,11 +162,6 @@ public class GeneralTools {
                                         .build())
                                 .build())
                         .build();
-            }
-
-            @Override
-            public String getRequiredMode() {
-                return "NORMAL";
             }
 
             @Override
@@ -246,11 +231,6 @@ public class GeneralTools {
                                         .build())
                                 .build())
                         .build();
-            }
-
-            @Override
-            public String getRequiredMode() {
-                return "ADMIN";
             }
 
             @Override
@@ -349,11 +329,6 @@ public class GeneralTools {
             }
 
             @Override
-            public String getRequiredMode() {
-                return "NORMAL";
-            }
-
-            @Override
             public List<Permission> getRequiredUserPermissions() {
                 return Collections.emptyList();
             }
@@ -435,11 +410,6 @@ public class GeneralTools {
                                         .build())
                                 .build())
                         .build();
-            }
-
-            @Override
-            public String getRequiredMode() {
-                return "NORMAL";
             }
 
             @Override
@@ -571,11 +541,6 @@ public class GeneralTools {
                                         .build())
                                 .build())
                         .build();
-            }
-
-            @Override
-            public String getRequiredMode() {
-                return "NORMAL";
             }
 
             @Override
@@ -711,11 +676,6 @@ public class GeneralTools {
             }
 
             @Override
-            public String getRequiredMode() {
-                return "NORMAL";
-            }
-
-            @Override
             public List<Permission> getRequiredUserPermissions() {
                 return Collections.emptyList();
             }
@@ -799,11 +759,6 @@ public class GeneralTools {
                                         .build())
                                 .build())
                         .build();
-            }
-
-            @Override
-            public String getRequiredMode() {
-                return "NORMAL";
             }
 
             @Override
@@ -911,11 +866,6 @@ public class GeneralTools {
             }
 
             @Override
-            public String getRequiredMode() {
-                return "NORMAL";
-            }
-
-            @Override
             public List<Permission> getRequiredUserPermissions() {
                 return Collections.emptyList();
             }
@@ -995,11 +945,6 @@ public class GeneralTools {
                                         .build())
                                 .build())
                         .build();
-            }
-
-            @Override
-            public String getRequiredMode() {
-                return "NORMAL";
             }
 
             @Override

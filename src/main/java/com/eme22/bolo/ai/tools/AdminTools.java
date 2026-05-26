@@ -9,12 +9,21 @@ import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.IPermissionHolder;
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Role;
+import net.dv8tion.jda.api.entities.channel.ChannelType;
+import net.dv8tion.jda.api.entities.channel.attribute.IPermissionContainer;
 import net.dv8tion.jda.api.entities.channel.concrete.Category;
+import net.dv8tion.jda.api.entities.channel.concrete.NewsChannel;
+import net.dv8tion.jda.api.entities.channel.concrete.StageChannel;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.entities.channel.concrete.VoiceChannel;
 import net.dv8tion.jda.api.entities.channel.middleman.GuildChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.StandardGuildChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.StandardGuildMessageChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.api.requests.restaction.PermissionOverrideAction;
 import java.awt.Color;
 import java.util.*;
 import net.dv8tion.jda.api.EmbedBuilder;
@@ -42,6 +51,13 @@ public class AdminTools {
         return p;
     }
 
+    private Map<String, Object> createIntegerProp(String desc) {
+        Map<String, Object> p = new HashMap<>();
+        p.put("type", "integer");
+        p.put("description", desc);
+        return p;
+    }
+
     @Produces
     @ApplicationScoped
     public AITool getGetServerStructureTool() {
@@ -51,7 +67,6 @@ public class AdminTools {
             @Override public OpenAIDTO.Tool getDefinition() {
                 return OpenAIDTO.Tool.builder().type("function").function(OpenAIDTO.FunctionDefinition.builder().name(getName()).description(getDescription()).parameters(OpenAIDTO.ParametersDefinition.builder().type("object").properties(new HashMap<>()).required(new ArrayList<>()).build()).build()).build();
             }
-            @Override public String getRequiredMode() { return "ADMIN"; }
             @Override public List<Permission> getRequiredUserPermissions() { return Collections.singletonList(Permission.MANAGE_SERVER); }
             @Override public String execute(MessageReceivedEvent event, Map<String, Object> arguments) throws Exception {
                 Guild guild = event.getGuild();
@@ -95,7 +110,6 @@ public class AdminTools {
                 props.put("categoryId", createStringProp("ID opcional de la categoría donde colocar el canal."));
                 return OpenAIDTO.Tool.builder().type("function").function(OpenAIDTO.FunctionDefinition.builder().name(getName()).description(getDescription()).parameters(OpenAIDTO.ParametersDefinition.builder().type("object").properties(props).required(Collections.singletonList("name")).build()).build()).build();
             }
-            @Override public String getRequiredMode() { return "ADMIN"; }
             @Override public List<Permission> getRequiredUserPermissions() { return Collections.singletonList(Permission.MANAGE_CHANNEL); }
             @Override public String execute(MessageReceivedEvent event, Map<String, Object> arguments) throws Exception {
                 String name = (String) arguments.get("name");
@@ -129,7 +143,6 @@ public class AdminTools {
                 props.put("categoryId", createStringProp("ID opcional de la categoría donde colocar el canal."));
                 return OpenAIDTO.Tool.builder().type("function").function(OpenAIDTO.FunctionDefinition.builder().name(getName()).description(getDescription()).parameters(OpenAIDTO.ParametersDefinition.builder().type("object").properties(props).required(Collections.singletonList("name")).build()).build()).build();
             }
-            @Override public String getRequiredMode() { return "ADMIN"; }
             @Override public List<Permission> getRequiredUserPermissions() { return Collections.singletonList(Permission.MANAGE_CHANNEL); }
             @Override public String execute(MessageReceivedEvent event, Map<String, Object> arguments) throws Exception {
                 String name = (String) arguments.get("name");
@@ -163,7 +176,6 @@ public class AdminTools {
                 props.put("newName", createStringProp("Nombre opcional para el nuevo canal clonado."));
                 return OpenAIDTO.Tool.builder().type("function").function(OpenAIDTO.FunctionDefinition.builder().name(getName()).description(getDescription()).parameters(OpenAIDTO.ParametersDefinition.builder().type("object").properties(props).required(Collections.singletonList("channelId")).build()).build()).build();
             }
-            @Override public String getRequiredMode() { return "ADMIN"; }
             @Override public List<Permission> getRequiredUserPermissions() { return Collections.singletonList(Permission.MANAGE_CHANNEL); }
             @Override public String execute(MessageReceivedEvent event, Map<String, Object> arguments) throws Exception {
                 String chId = (String) arguments.get("channelId");
@@ -198,7 +210,6 @@ public class AdminTools {
                 props.put("channelId", createStringProp("ID del canal de texto o voz a eliminar."));
                 return OpenAIDTO.Tool.builder().type("function").function(OpenAIDTO.FunctionDefinition.builder().name(getName()).description(getDescription()).parameters(OpenAIDTO.ParametersDefinition.builder().type("object").properties(props).required(Collections.singletonList("channelId")).build()).build()).build();
             }
-            @Override public String getRequiredMode() { return "ADMIN"; }
             @Override public List<Permission> getRequiredUserPermissions() { return Collections.singletonList(Permission.MANAGE_CHANNEL); }
             @Override public String execute(MessageReceivedEvent event, Map<String, Object> arguments) throws Exception {
                 String chId = (String) arguments.get("channelId");
@@ -225,7 +236,6 @@ public class AdminTools {
                 props.put("roleId", createStringProp("ID de Discord del rol a asignar."));
                 return OpenAIDTO.Tool.builder().type("function").function(OpenAIDTO.FunctionDefinition.builder().name(getName()).description(getDescription()).parameters(OpenAIDTO.ParametersDefinition.builder().type("object").properties(props).required(Arrays.asList("userId", "roleId")).build()).build()).build();
             }
-            @Override public String getRequiredMode() { return "ADMIN"; }
             @Override public List<Permission> getRequiredUserPermissions() { return Collections.singletonList(Permission.MANAGE_ROLES); }
             @Override public String execute(MessageReceivedEvent event, Map<String, Object> arguments) throws Exception {
                 String uId = (String) arguments.get("userId");
@@ -254,7 +264,6 @@ public class AdminTools {
                 props.put("roleId", createStringProp("ID de Discord del rol a remover."));
                 return OpenAIDTO.Tool.builder().type("function").function(OpenAIDTO.FunctionDefinition.builder().name(getName()).description(getDescription()).parameters(OpenAIDTO.ParametersDefinition.builder().type("object").properties(props).required(Arrays.asList("userId", "roleId")).build()).build()).build();
             }
-            @Override public String getRequiredMode() { return "ADMIN"; }
             @Override public List<Permission> getRequiredUserPermissions() { return Collections.singletonList(Permission.MANAGE_ROLES); }
             @Override public String execute(MessageReceivedEvent event, Map<String, Object> arguments) throws Exception {
                 String uId = (String) arguments.get("userId");
@@ -283,7 +292,6 @@ public class AdminTools {
                 props.put("colorHex", createStringProp("Color hexadecimal del rol (ej: #FF5733)."));
                 return OpenAIDTO.Tool.builder().type("function").function(OpenAIDTO.FunctionDefinition.builder().name(getName()).description(getDescription()).parameters(OpenAIDTO.ParametersDefinition.builder().type("object").properties(props).required(Collections.singletonList("name")).build()).build()).build();
             }
-            @Override public String getRequiredMode() { return "ADMIN"; }
             @Override public List<Permission> getRequiredUserPermissions() { return Collections.singletonList(Permission.MANAGE_ROLES); }
             @Override public String execute(MessageReceivedEvent event, Map<String, Object> arguments) throws Exception {
                 String name = (String) arguments.get("name");
@@ -318,7 +326,6 @@ public class AdminTools {
                 props.put("prefix", createStringProp("El nuevo prefijo de texto (máximo 10 caracteres, o '@mention')."));
                 return OpenAIDTO.Tool.builder().type("function").function(OpenAIDTO.FunctionDefinition.builder().name(getName()).description(getDescription()).parameters(OpenAIDTO.ParametersDefinition.builder().type("object").properties(props).required(Collections.singletonList("prefix")).build()).build()).build();
             }
-            @Override public String getRequiredMode() { return "ADMIN"; }
             @Override public List<Permission> getRequiredUserPermissions() { return Collections.singletonList(Permission.ADMINISTRATOR); }
             @Override public String execute(MessageReceivedEvent event, Map<String, Object> arguments) throws Exception {
                 String newPrefix = (String) arguments.get("prefix");
@@ -345,7 +352,6 @@ public class AdminTools {
                 props.put("enable", createBooleanProp("Establecer a true para activar el modo anti-raid, o false para desactivarlo."));
                 return OpenAIDTO.Tool.builder().type("function").function(OpenAIDTO.FunctionDefinition.builder().name(getName()).description(getDescription()).parameters(OpenAIDTO.ParametersDefinition.builder().type("object").properties(props).required(Collections.singletonList("enable")).build()).build()).build();
             }
-            @Override public String getRequiredMode() { return "ADMIN"; }
             @Override public List<Permission> getRequiredUserPermissions() { return Collections.singletonList(Permission.ADMINISTRATOR); }
             @Override public String execute(MessageReceivedEvent event, Map<String, Object> arguments) throws Exception {
                 Boolean enable = (Boolean) arguments.get("enable");
@@ -379,7 +385,6 @@ public class AdminTools {
 
                 return OpenAIDTO.Tool.builder().type("function").function(OpenAIDTO.FunctionDefinition.builder().name(getName()).description(getDescription()).parameters(OpenAIDTO.ParametersDefinition.builder().type("object").properties(props).required(Arrays.asList("type", "channelId", "message", "enabled")).build()).build()).build();
             }
-            @Override public String getRequiredMode() { return "ADMIN"; }
             @Override public List<Permission> getRequiredUserPermissions() { return Collections.singletonList(Permission.ADMINISTRATOR); }
             @Override public String execute(MessageReceivedEvent event, Map<String, Object> arguments) throws Exception {
                 String type = (String) arguments.get("type");
@@ -442,7 +447,6 @@ public class AdminTools {
 
                 return OpenAIDTO.Tool.builder().type("function").function(OpenAIDTO.FunctionDefinition.builder().name(getName()).description(getDescription()).parameters(OpenAIDTO.ParametersDefinition.builder().type("object").properties(props).required(Arrays.asList("channelId", "message", "roleIds")).build()).build()).build();
             }
-            @Override public String getRequiredMode() { return "ADMIN"; }
             @Override public List<Permission> getRequiredUserPermissions() { return Arrays.asList(Permission.MANAGE_ROLES, Permission.MANAGE_CHANNEL); }
             @Override public String execute(MessageReceivedEvent event, Map<String, Object> arguments) throws Exception {
                 String channelIdStr = (String) arguments.get("channelId");
@@ -513,6 +517,261 @@ public class AdminTools {
                 } catch (Exception e) {
                     return "Error al enviar el mensaje o guardar el selector: " + e.getMessage();
                 }
+            }
+        };
+    }
+
+    @Produces
+    @ApplicationScoped
+    public AITool getEditChannelTool() {
+        return new AITool() {
+            @Override public String getName() { return "edit_channel"; }
+            @Override public String getDescription() { return "Edita un canal del servidor: renombrar, cambiar tema, modo NSFW, slowmode."; }
+            @Override public OpenAIDTO.Tool getDefinition() {
+                Map<String, Object> props = new HashMap<>();
+                props.put("channelId", createStringProp("ID del canal a editar."));
+                props.put("name", createStringProp("Nuevo nombre para el canal (opcional)."));
+                props.put("topic", createStringProp("Nuevo tema/descripción del canal (solo canales de texto/anuncios, opcional)."));
+                props.put("nsfw", createBooleanProp("Marcar como NSFW (solo canales de texto/anuncios, opcional)."));
+                props.put("slowmode", createIntegerProp("Slowmode en segundos (0-21600, solo canales de texto/anuncios, opcional)."));
+                return OpenAIDTO.Tool.builder().type("function").function(OpenAIDTO.FunctionDefinition.builder().name(getName()).description(getDescription()).parameters(OpenAIDTO.ParametersDefinition.builder().type("object").properties(props).required(Collections.singletonList("channelId")).build()).build()).build();
+            }
+            @Override public List<Permission> getRequiredUserPermissions() { return Collections.singletonList(Permission.MANAGE_CHANNEL); }
+            @Override public String execute(MessageReceivedEvent event, Map<String, Object> arguments) throws Exception {
+                String channelId = (String) arguments.get("channelId");
+                String name = (String) arguments.get("name");
+                String topic = (String) arguments.get("topic");
+                Boolean nsfw = (Boolean) arguments.get("nsfw");
+                Integer slowmode = arguments.get("slowmode") != null ? ((Number) arguments.get("slowmode")).intValue() : null;
+                Guild guild = event.getGuild();
+                GuildChannel channel = guild.getGuildChannelById(channelId);
+                if (channel == null) return "Error: No se encontró el canal con ID " + channelId + ".";
+                List<String> changes = new ArrayList<>();
+                if (name != null && !name.trim().isEmpty()) {
+                    channel.getManager().setName(name).complete();
+                    changes.add("nombre cambiado a '" + name + "'");
+                }
+                boolean isTextLike = channel.getType() == ChannelType.TEXT || channel.getType() == ChannelType.NEWS;
+                if (isTextLike) {
+                    if (channel instanceof TextChannel tc) {
+                        var m = tc.getManager();
+                        if (topic != null) { m.setTopic(topic); changes.add("tema actualizado"); }
+                        if (nsfw != null) { m.setNSFW(nsfw); changes.add("NSFW " + (nsfw ? "activado" : "desactivado")); }
+                        if (slowmode != null) {
+                            if (slowmode < 0 || slowmode > 21600) return "Error: El slowmode debe estar entre 0 y 21600 segundos.";
+                            m.setSlowmode(slowmode); changes.add("slowmode cambiado a " + slowmode + "s");
+                        }
+                        if (topic != null || nsfw != null || slowmode != null) m.complete();
+                    } else if (channel instanceof NewsChannel nc) {
+                        if (slowmode != null) return "Error: Los canales de anuncios no soportan slowmode.";
+                        var m = nc.getManager();
+                        if (topic != null) { m.setTopic(topic); changes.add("tema actualizado"); }
+                        if (nsfw != null) { m.setNSFW(nsfw); changes.add("NSFW " + (nsfw ? "activado" : "desactivado")); }
+                        if (topic != null || nsfw != null) m.complete();
+                    }
+                } else {
+                    if (topic != null) return "Error: Este tipo de canal no soporta tema/descripción.";
+                    if (nsfw != null) return "Error: Este tipo de canal no soporta modo NSFW.";
+                    if (slowmode != null) return "Error: Este tipo de canal no soporta slowmode.";
+                }
+                if (changes.isEmpty()) return "No se realizó ningún cambio. Proporciona al menos un parámetro para modificar.";
+                return "Canal '" + channel.getName() + "' editado correctamente. Cambios: " + String.join(", ", changes) + ".";
+            }
+        };
+    }
+
+    @Produces
+    @ApplicationScoped
+    public AITool getCreateCategoryTool() {
+        return new AITool() {
+            @Override public String getName() { return "create_category"; }
+            @Override public String getDescription() { return "Crea una nueva categoría en el servidor."; }
+            @Override public OpenAIDTO.Tool getDefinition() {
+                Map<String, Object> props = new HashMap<>();
+                props.put("name", createStringProp("Nombre de la nueva categoría."));
+                return OpenAIDTO.Tool.builder().type("function").function(OpenAIDTO.FunctionDefinition.builder().name(getName()).description(getDescription()).parameters(OpenAIDTO.ParametersDefinition.builder().type("object").properties(props).required(Collections.singletonList("name")).build()).build()).build();
+            }
+            @Override public List<Permission> getRequiredUserPermissions() { return Collections.singletonList(Permission.MANAGE_CHANNEL); }
+            @Override public String execute(MessageReceivedEvent event, Map<String, Object> arguments) throws Exception {
+                String name = (String) arguments.get("name");
+                Guild guild = event.getGuild();
+                if (name == null || name.trim().isEmpty()) return "Error: Falta el parámetro 'name'.";
+                Category created = guild.createCategory(name).complete();
+                return String.format("Se ha creado exitosamente la categoría '%s' (ID: %s).", created.getName(), created.getId());
+            }
+        };
+    }
+
+    @Produces
+    @ApplicationScoped
+    public AITool getCreateAnnouncementChannelTool() {
+        return new AITool() {
+            @Override public String getName() { return "create_announcement_channel"; }
+            @Override public String getDescription() { return "Crea un nuevo canal de anuncios en el servidor dentro de una categoría opcional."; }
+            @Override public OpenAIDTO.Tool getDefinition() {
+                Map<String, Object> props = new HashMap<>();
+                props.put("name", createStringProp("Nombre del nuevo canal de anuncios."));
+                props.put("categoryId", createStringProp("ID opcional de la categoría donde colocar el canal."));
+                props.put("topic", createStringProp("Tema/descripción opcional del canal."));
+                return OpenAIDTO.Tool.builder().type("function").function(OpenAIDTO.FunctionDefinition.builder().name(getName()).description(getDescription()).parameters(OpenAIDTO.ParametersDefinition.builder().type("object").properties(props).required(Collections.singletonList("name")).build()).build()).build();
+            }
+            @Override public List<Permission> getRequiredUserPermissions() { return Collections.singletonList(Permission.MANAGE_CHANNEL); }
+            @Override public String execute(MessageReceivedEvent event, Map<String, Object> arguments) throws Exception {
+                String name = (String) arguments.get("name");
+                String catId = (String) arguments.get("categoryId");
+                String topic = (String) arguments.get("topic");
+                Guild guild = event.getGuild();
+                if (name == null || name.trim().isEmpty()) return "Error: Falta el parámetro 'name'.";
+                var action = guild.createNewsChannel(name);
+                if (catId != null && !catId.trim().isEmpty()) {
+                    Category category = guild.getCategoryById(catId);
+                    if (category != null) action = action.setParent(category);
+                }
+                if (topic != null && !topic.trim().isEmpty()) {
+                    action = action.setTopic(topic);
+                }
+                NewsChannel created = action.complete();
+                return String.format("Se ha creado exitosamente el canal de anuncios `#%s` (ID: %s) en la categoría '%s'.",
+                        created.getName(), created.getId(), created.getParentCategory() != null ? created.getParentCategory().getName() : "Ninguna");
+            }
+        };
+    }
+
+    @Produces
+    @ApplicationScoped
+    public AITool getCreateStageChannelTool() {
+        return new AITool() {
+            @Override public String getName() { return "create_stage_channel"; }
+            @Override public String getDescription() { return "Crea un nuevo canal de escenario en el servidor dentro de una categoría opcional."; }
+            @Override public OpenAIDTO.Tool getDefinition() {
+                Map<String, Object> props = new HashMap<>();
+                props.put("name", createStringProp("Nombre del nuevo canal de escenario."));
+                props.put("categoryId", createStringProp("ID opcional de la categoría donde colocar el canal."));
+                props.put("topic", createStringProp("Tema/descripción opcional del canal."));
+                return OpenAIDTO.Tool.builder().type("function").function(OpenAIDTO.FunctionDefinition.builder().name(getName()).description(getDescription()).parameters(OpenAIDTO.ParametersDefinition.builder().type("object").properties(props).required(Collections.singletonList("name")).build()).build()).build();
+            }
+            @Override public List<Permission> getRequiredUserPermissions() { return Collections.singletonList(Permission.MANAGE_CHANNEL); }
+            @Override public String execute(MessageReceivedEvent event, Map<String, Object> arguments) throws Exception {
+                String name = (String) arguments.get("name");
+                String catId = (String) arguments.get("categoryId");
+                String topic = (String) arguments.get("topic");
+                Guild guild = event.getGuild();
+                if (name == null || name.trim().isEmpty()) return "Error: Falta el parámetro 'name'.";
+                var action = guild.createStageChannel(name);
+                if (catId != null && !catId.trim().isEmpty()) {
+                    Category category = guild.getCategoryById(catId);
+                    if (category != null) action = action.setParent(category);
+                }
+                if (topic != null && !topic.trim().isEmpty()) {
+                    action = action.setTopic(topic);
+                }
+                StageChannel created = action.complete();
+                return String.format("Se ha creado exitosamente el canal de escenario `%s` (ID: %s) en la categoría '%s'.",
+                        created.getName(), created.getId(), created.getParentCategory() != null ? created.getParentCategory().getName() : "Ninguna");
+            }
+        };
+    }
+
+    @Produces
+    @ApplicationScoped
+    public AITool getMoveChannelTool() {
+        return new AITool() {
+            @Override public String getName() { return "move_channel"; }
+            @Override public String getDescription() { return "Mueve un canal a una categoría específica o lo saca de su categoría actual."; }
+            @Override public OpenAIDTO.Tool getDefinition() {
+                Map<String, Object> props = new HashMap<>();
+                props.put("channelId", createStringProp("ID del canal a mover."));
+                props.put("categoryId", createStringProp("ID de la categoría destino. Si está vacío, el canal se saca de su categoría actual."));
+                return OpenAIDTO.Tool.builder().type("function").function(OpenAIDTO.FunctionDefinition.builder().name(getName()).description(getDescription()).parameters(OpenAIDTO.ParametersDefinition.builder().type("object").properties(props).required(Collections.singletonList("channelId")).build()).build()).build();
+            }
+            @Override public List<Permission> getRequiredUserPermissions() { return Collections.singletonList(Permission.MANAGE_CHANNEL); }
+            @Override public String execute(MessageReceivedEvent event, Map<String, Object> arguments) throws Exception {
+                String channelId = (String) arguments.get("channelId");
+                String catId = (String) arguments.get("categoryId");
+                Guild guild = event.getGuild();
+                GuildChannel channel = guild.getGuildChannelById(channelId);
+                if (channel == null) return "Error: No se encontró el canal con ID " + channelId + ".";
+                if (!(channel instanceof StandardGuildChannel sgc)) {
+                    return "Error: Este tipo de canal no se puede mover a una categoría.";
+                }
+                Category category = null;
+                if (catId != null && !catId.trim().isEmpty()) {
+                    category = guild.getCategoryById(catId);
+                    if (category == null) return "Error: No se encontró la categoría con ID " + catId + ".";
+                }
+                sgc.getManager().setParent(category).complete();
+                String parentName = category != null ? "'" + category.getName() + "'" : "Ninguna (sin categoría)";
+                return String.format("El canal '%s' (ID: %s) se ha movido exitosamente a la categoría %s.",
+                        channel.getName(), channel.getId(), parentName);
+            }
+        };
+    }
+
+    @Produces
+    @ApplicationScoped
+    public AITool getSetChannelPermissionsTool() {
+        return new AITool() {
+            @Override public String getName() { return "set_channel_permissions"; }
+            @Override public String getDescription() { return "Configura permisos de un rol o usuario en un canal específico del servidor."; }
+            @Override public OpenAIDTO.Tool getDefinition() {
+                Map<String, Object> props = new HashMap<>();
+                props.put("channelId", createStringProp("ID del canal donde se aplicarán los permisos."));
+                Map<String, Object> targetTypeProp = new HashMap<>();
+                targetTypeProp.put("type", "string");
+                targetTypeProp.put("enum", Arrays.asList("role", "user"));
+                targetTypeProp.put("description", "Tipo de destino: 'role' para un rol, 'user' para un miembro.");
+                props.put("targetType", targetTypeProp);
+                props.put("targetId", createStringProp("ID del rol o usuario (según targetType)."));
+                props.put("allowPermissions", createStringProp("Permisos a conceder, separados por coma (ej: VIEW_CHANNEL, MESSAGE_SEND). Opcional."));
+                props.put("denyPermissions", createStringProp("Permisos a denegar, separados por coma (ej: MESSAGE_WRITE). Opcional."));
+                return OpenAIDTO.Tool.builder().type("function").function(OpenAIDTO.FunctionDefinition.builder().name(getName()).description(getDescription()).parameters(OpenAIDTO.ParametersDefinition.builder().type("object").properties(props).required(Arrays.asList("channelId", "targetType", "targetId")).build()).build()).build();
+            }
+            @Override public List<Permission> getRequiredUserPermissions() { return Collections.singletonList(Permission.MANAGE_CHANNEL); }
+            @Override public String execute(MessageReceivedEvent event, Map<String, Object> arguments) throws Exception {
+                String channelId = (String) arguments.get("channelId");
+                String targetType = (String) arguments.get("targetType");
+                String targetId = (String) arguments.get("targetId");
+                String allowStr = (String) arguments.get("allowPermissions");
+                String denyStr = (String) arguments.get("denyPermissions");
+                Guild guild = event.getGuild();
+                GuildChannel channel = guild.getGuildChannelById(channelId);
+                if (channel == null) return "Error: No se encontró el canal con ID " + channelId + ".";
+                IPermissionHolder holder;
+                if ("role".equalsIgnoreCase(targetType)) {
+                    Role role = guild.getRoleById(targetId);
+                    if (role == null) return "Error: No se encontró el rol con ID " + targetId + ".";
+                    holder = role;
+                } else if ("user".equalsIgnoreCase(targetType)) {
+                    Member member = guild.getMemberById(targetId);
+                    if (member == null) return "Error: No se encontró el miembro con ID " + targetId + " en este servidor.";
+                    holder = member;
+                } else {
+                    return "Error: targetType debe ser 'role' o 'user'.";
+                }
+                long allowRaw = parsePermissionString(allowStr);
+                long denyRaw = parsePermissionString(denyStr);
+                PermissionOverrideAction action = ((IPermissionContainer) channel).upsertPermissionOverride(holder);
+                action.setAllowed(allowRaw).setDenied(denyRaw).complete();
+                StringBuilder result = new StringBuilder();
+                result.append("Permisos actualizados en el canal '").append(channel.getName()).append("' para ");
+                result.append(holder instanceof Role ? "el rol" : "el miembro").append(" '").append(
+                        holder instanceof Role r ? r.getName() : ((Member) holder).getEffectiveName()
+                ).append("'.");
+                if (allowRaw != 0) result.append("\nPermisos concedidos: ").append(allowStr);
+                if (denyRaw != 0) result.append("\nPermisos denegados: ").append(denyStr);
+                return result.toString();
+            }
+
+            private long parsePermissionString(String perms) {
+                long bits = 0;
+                if (perms == null || perms.trim().isEmpty()) return bits;
+                for (String p : perms.split(",")) {
+                    try {
+                        Permission perm = Permission.valueOf(p.trim().toUpperCase());
+                        bits |= perm.getRawValue();
+                    } catch (IllegalArgumentException ignored) {}
+                }
+                return bits;
             }
         };
     }

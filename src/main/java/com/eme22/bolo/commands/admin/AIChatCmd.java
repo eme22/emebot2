@@ -46,21 +46,17 @@ public class AIChatCmd extends AdminCommand {
                 .addChoice("reset", "reset")
                 .addChoice("status", "status")
                 .addChoice("channel", "channel")
-                .addChoice("mode", "mode")
                 .addChoice("setup", "setup")
                 .addChoice("exclusive", "exclusive")
                 .setRequired(true);
 
         OptionData channelOption = new OptionData(OptionType.CHANNEL, "canal-id", "Canal exclusivo para chatear con la IA (acción 'channel').");
-        OptionData modeOption = new OptionData(OptionType.STRING, "modo-ia", "Modo operativo de la IA (acción 'mode').")
-                .addChoice("normal", "normal")
-                .addChoice("admin", "admin");
         OptionData apiKeyOption = new OptionData(OptionType.STRING, "api-key", "Clave API de OpenAI/DeepSeek (acción 'setup').");
         OptionData baseUrlOption = new OptionData(OptionType.STRING, "base-url", "Base URL personalizada (acción 'setup').");
         OptionData modelOption = new OptionData(OptionType.STRING, "modelo-ia", "Modelo de IA personalizado (acción 'setup').");
         OptionData exclusiveOption = new OptionData(OptionType.BOOLEAN, "exclusivo", "Habilita o deshabilita la respuesta exclusiva en el canal de IA (acción 'exclusive').");
 
-        this.options = Arrays.asList(actionOption, channelOption, modeOption, apiKeyOption, baseUrlOption, modelOption, exclusiveOption);
+        this.options = Arrays.asList(actionOption, channelOption, apiKeyOption, baseUrlOption, modelOption, exclusiveOption);
     }
 
     @Override
@@ -102,18 +98,6 @@ public class AIChatCmd extends AdminCommand {
                     server.save();
                     event.reply("✅ **Canal exclusivo de IA establecido en**: " + chOpt.getAsChannel().getAsMention()).queue();
                 }
-                break;
-
-            case "mode":
-                OptionMapping modeOpt = event.getOption("modo-ia");
-                if (modeOpt == null) {
-                    event.reply("⚠️ Debes especificar el parámetro `modo-ia` para esta acción.").setEphemeral(true).queue();
-                    return;
-                }
-                String targetMode = modeOpt.getAsString().toUpperCase();
-                server.setAiMode(targetMode);
-                server.save();
-                event.reply("🤖 **Modo de IA cambiado a**: `" + targetMode + "`").queue();
                 break;
 
             case "setup":
@@ -211,21 +195,6 @@ public class AIChatCmd extends AdminCommand {
                 }
                 break;
 
-            case "mode":
-                if (args.length < 2) {
-                    event.replyWarning("Uso: `ai mode <normal|admin>`");
-                    return;
-                }
-                String m = args[1].toUpperCase();
-                if ("NORMAL".equals(m) || "ADMIN".equals(m)) {
-                    server.setAiMode(m);
-                    server.save();
-                    event.replySuccess("Modo de IA cambiado a: `" + m + "`");
-                } else {
-                    event.replyError("Modo no válido. Elige `normal` o `admin`.");
-                }
-                break;
-
             case "setup":
                 if (args.length < 2) {
                     event.replyWarning("Uso: `ai setup <apiKey> [baseUrl] [model]`");
@@ -258,7 +227,7 @@ public class AIChatCmd extends AdminCommand {
                 break;
 
             default:
-                event.replyWarning("Acción desconocida. Usa `enable`, `disable`, `channel`, `mode`, `exclusive`, `reset` o `status`.");
+                event.replyWarning("Acción desconocida. Usa `enable`, `disable`, `channel`, `exclusive`, `reset` o `status`.");
                 break;
         }
     }
@@ -270,7 +239,6 @@ public class AIChatCmd extends AdminCommand {
         builder.setTimestamp(Instant.now());
 
         builder.addField("Habilitado", server.isAiEnabled() ? "🟢 Sí" : "🔴 No", true);
-        builder.addField("Modo Activo", "`" + (server.getAiMode() != null ? server.getAiMode() : "NORMAL") + "`", true);
 
         long channelId = server.getAiChannelId();
         String channelStr = channelId == 0L ? "Ninguno (Responder a Menciones `@mention`)" : "<#" + channelId + ">";

@@ -59,11 +59,6 @@ public class MusicTools {
             }
 
             @Override
-            public String getRequiredMode() {
-                return "NORMAL";
-            }
-
-            @Override
             public List<Permission> getRequiredUserPermissions() {
                 return Collections.emptyList();
             }
@@ -117,11 +112,6 @@ public class MusicTools {
                                         .build())
                                 .build())
                         .build();
-            }
-
-            @Override
-            public String getRequiredMode() {
-                return "NORMAL";
             }
 
             @Override
@@ -181,11 +171,6 @@ public class MusicTools {
                                         .build())
                                 .build())
                         .build();
-            }
-
-            @Override
-            public String getRequiredMode() {
-                return "NORMAL";
             }
 
             @Override
@@ -358,11 +343,6 @@ public class MusicTools {
             }
 
             @Override
-            public String getRequiredMode() {
-                return "NORMAL";
-            }
-
-            @Override
             public List<Permission> getRequiredUserPermissions() {
                 return Collections.emptyList();
             }
@@ -461,11 +441,6 @@ public class MusicTools {
             }
 
             @Override
-            public String getRequiredMode() {
-                return "NORMAL";
-            }
-
-            @Override
             public List<Permission> getRequiredUserPermissions() {
                 return Collections.emptyList();
             }
@@ -512,11 +487,6 @@ public class MusicTools {
                                         .build())
                                 .build())
                         .build();
-            }
-
-            @Override
-            public String getRequiredMode() {
-                return "NORMAL";
             }
 
             @Override
@@ -572,11 +542,6 @@ public class MusicTools {
             }
 
             @Override
-            public String getRequiredMode() {
-                return "NORMAL";
-            }
-
-            @Override
             public List<Permission> getRequiredUserPermissions() {
                 return Collections.emptyList();
             }
@@ -626,11 +591,6 @@ public class MusicTools {
                                         .build())
                                 .build())
                         .build();
-            }
-
-            @Override
-            public String getRequiredMode() {
-                return "NORMAL";
             }
 
             @Override
@@ -694,11 +654,6 @@ public class MusicTools {
                                         .build())
                                 .build())
                         .build();
-            }
-
-            @Override
-            public String getRequiredMode() {
-                return "NORMAL";
             }
 
             @Override
@@ -772,11 +727,6 @@ public class MusicTools {
             }
 
             @Override
-            public String getRequiredMode() {
-                return "NORMAL";
-            }
-
-            @Override
             public List<Permission> getRequiredUserPermissions() {
                 return Collections.emptyList();
             }
@@ -846,11 +796,6 @@ public class MusicTools {
                                         .build())
                                 .build())
                         .build();
-            }
-
-            @Override
-            public String getRequiredMode() {
-                return "NORMAL";
             }
 
             @Override
