@@ -60,12 +60,23 @@ public class AIChatListener implements EventListener {
             isReplyToBot = event.getMessage().getReferencedMessage().getAuthor().getIdLong() == event.getJDA().getSelfUser().getIdLong();
         }
 
-        // 4. Trigger AI if exclusive channel is used OR (if NOT exclusive-only) the bot is mentioned OR it is a reply to the bot
+        boolean interactionTriggered = isMentioned || isReplyToBot;
+
+        String rawMessage = event.getMessage().getContentRaw();
+        String cleanMessage = rawMessage.replaceAll("<@!?" + event.getJDA().getSelfUser().getId() + ">", "").trim();
         boolean shouldRespond = false;
-        if (isExclusiveChannel) {
-            shouldRespond = true;
-        } else if (!server.isAiExclusive()) {
-            shouldRespond = isMentioned || isReplyToBot;
+        if (interactionTriggered) {
+            if (isExclusiveChannel) {
+                shouldRespond = true;
+            } else if (!server.isAiExclusive()) {
+                shouldRespond = true;
+            } else {
+                long musicChannelId = server.getTextChannelId();
+                boolean isMusicChannel = musicChannelId != 0L && event.getChannel().getIdLong() == musicChannelId;
+                if (isMusicChannel && isSongRequestOrSearch(cleanMessage)) {
+                    shouldRespond = true;
+                }
+            }
         }
 
         if (shouldRespond) {
@@ -79,10 +90,6 @@ public class AIChatListener implements EventListener {
                 return;
             }
 
-            String rawMessage = event.getMessage().getContentRaw();
-
-            // Clean up the mention from the prompt
-            String cleanMessage = rawMessage.replaceAll("<@!?" + event.getJDA().getSelfUser().getId() + ">", "").trim();
             if (cleanMessage.isEmpty() && isMentioned) {
                 event.getMessage().reply("¡Hola! ¿En qué puedo ayudarte hoy? Escríbeme o pregúntame algo.").queue();
                 return;
@@ -157,4 +164,16 @@ public class AIChatListener implements EventListener {
             });
         }
     }
+
+    private boolean isSongRequestOrSearch(String message) {
+        if (message == null || message.trim().isEmpty()) {
+            return false;
+        }
+        String lower = message.toLowerCase();
+        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile(
+            "(?U)\\b(reproduc|reprodúc|busc|búsc|pon|cancion|canción|music|músic|play|song|cant|cánt|tema|temazo|search|find)"
+        );
+        return pattern.matcher(lower).find();
+    }
 }
+
