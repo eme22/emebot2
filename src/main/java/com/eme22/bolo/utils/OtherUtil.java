@@ -614,16 +614,16 @@ public class OtherUtil {
       }
    }
 
-   public static boolean isAudioChannelAllowed(Guild guild, Server settings, Member member) {
-      VoiceChannel current = guild.getSelfMember().getVoiceState().getChannel().asVoiceChannel();
-      GuildVoiceState userState = member.getVoiceState();
-      if (current == null) {
-         current = guild.getVoiceChannelById(settings.getVoiceChannelId());
-         return current == null ? true : userState.getChannel().equals(current);
-      } else {
-         return userState.getChannel().equals(current);
-      }
-   }
+    public static boolean isAudioChannelAllowed(Guild guild, Server settings, Member member) {
+       net.dv8tion.jda.api.entities.channel.unions.AudioChannelUnion current = guild.getSelfMember().getVoiceState().getChannel();
+       GuildVoiceState userState = member.getVoiceState();
+       if (current == null) {
+          VoiceChannel configured = settings.getVoiceChannelId() == 0 ? null : guild.getVoiceChannelById(settings.getVoiceChannelId());
+          return configured == null ? true : (userState != null && userState.getChannel() != null && userState.getChannel().equals(configured));
+       } else {
+          return userState != null && userState.getChannel() != null && userState.getChannel().equals(current);
+       }
+    }
 
    public static int isUserInVoice(Guild guild, Server settings, Member member) {
       GuildVoiceState userState = member.getVoiceState();
