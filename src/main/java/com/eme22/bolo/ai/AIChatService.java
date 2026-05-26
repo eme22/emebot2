@@ -53,12 +53,15 @@ public class AIChatService {
     @ConfigProperty(name = "openai.model")
     String globalModel;
 
+    private volatile Integer lastSuccessfulConfigIndex = null;
+
     @Transactional
     public void saveConfig(String apiKey, String baseUrl, String model, int timeoutSeconds) {
         aiGlobalConfigRepository.setValue("api-key", apiKey);
         aiGlobalConfigRepository.setValue("url", baseUrl);
         aiGlobalConfigRepository.setValue("model", model);
         aiGlobalConfigRepository.setValue("timeout", String.valueOf(timeoutSeconds));
+        this.lastSuccessfulConfigIndex = null;
     }
 
     @Transactional
@@ -120,6 +123,8 @@ public class AIChatService {
         
         if (finalTimeout != null) aiGlobalConfigRepository.setValue(prefix + "timeout", finalTimeout);
         else aiGlobalConfigRepository.deleteValue(prefix + "timeout");
+
+        this.lastSuccessfulConfigIndex = null;
     }
 
     public List<AIConfig> getBackupConfigs(String defaultUrl, String defaultModel, int defaultTimeout) {
@@ -228,12 +233,30 @@ public class AIChatService {
             }
         }
 
+        log.info("[AI] Iniciando procesamiento de mensaje de chat para Guild: {}, Channel: {}, User: {}", guildId, channelId, userId);
+
         List<AIConfig> candidateConfigs = new ArrayList<>();
         candidateConfigs.add(new AIConfig(0, apiKey, baseUrl, model, timeoutSeconds));
         candidateConfigs.addAll(getBackupConfigs(getGlobalBaseUrl(), getGlobalModel(), getGlobalTimeoutSeconds()));
 
         // Filter out candidate configurations that lack an API key
         candidateConfigs.removeIf(c -> c.getApiKey() == null || c.getApiKey().isEmpty() || "none".equalsIgnoreCase(c.getApiKey()));
+
+        // Reorder candidateConfigs based on lastSuccessfulConfigIndex
+        Integer lastSuccessIdx = this.lastSuccessfulConfigIndex;
+        if (lastSuccessIdx != null) {
+            AIConfig preferred = null;
+            for (AIConfig c : candidateConfigs) {
+                if (c.getIndex() == lastSuccessIdx) {
+                    preferred = c;
+                    break;
+                }
+            }
+            if (preferred != null) {
+                candidateConfigs.remove(preferred);
+                candidateConfigs.add(0, preferred);
+            }
+        }
 
         if (candidateConfigs.isEmpty()) {
             return new AIChatResult("❌ El servicio de IA no está configurado. Un administrador debe configurar la API Key con `/ai setup` o `/setai`.", null);
@@ -319,6 +342,7 @@ public class AIChatService {
                 AIConfig successfulConfig = null;
 
                 for (AIConfig candidate : candidateConfigs) {
+                    long candidateStartTime = System.currentTimeMillis();
                     try {
                         String candidateApiKey = candidate.getApiKey();
                         String candidateBaseUrl = candidate.getBaseUrl();
@@ -338,10 +362,14 @@ public class AIChatService {
                         request.setModel(candidateModel);
 
                         // 8. Construct REST Client dynamically
-                        OpenAIClient client = RestClientBuilder.newBuilder()
+                        OpenAIClient client = io.quarkus.rest.client.reactive.QuarkusRestClientBuilder.newBuilder()
                                 .baseUri(URI.create(candidateBaseUrl))
-                                .connectTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
+                                .connectTimeout(5, java.util.concurrent.TimeUnit.SECONDS)
                                 .readTimeout(candidateTimeout, java.util.concurrent.TimeUnit.SECONDS)
+                                .property("quarkus.rest-client.connect-timeout", 5000)
+                                .property("quarkus.rest-client.read-timeout", candidateTimeout * 1000)
+                                .property("resteasy.connection.timeout", 5000)
+                                .property("resteasy.receive.timeout", candidateTimeout * 1000)
                                 .build(OpenAIClient.class);
 
                         // 9. Call OpenAI API
@@ -349,10 +377,10 @@ public class AIChatService {
 
                         if (response != null && response.getChoices() != null && !response.getChoices().isEmpty()) {
                             successfulConfig = candidate;
+                            this.lastSuccessfulConfigIndex = candidate.getIndex();
                             break;
                         }
                     } catch (Exception e) {
-                        log.warn("Error calling AI config (Index " + candidate.getIndex() + ", Model=" + candidate.getModel() + ", URL=" + candidate.getBaseUrl() + "): " + e.getMessage() + ". Trying next backup.");
                         lastException = e;
                     }
                 }
@@ -363,7 +391,6 @@ public class AIChatService {
 
                 // If fallback occurred, log it and reorder candidateConfigs to place successfulConfig at index 0
                 if (successfulConfig != null && candidateConfigs.indexOf(successfulConfig) > 0) {
-                    log.info("Primary AI failed; fell back to backup config (Index " + successfulConfig.getIndex() + ", Model=" + successfulConfig.getModel() + ", URL=" + successfulConfig.getBaseUrl() + ")");
                     candidateConfigs.remove(successfulConfig);
                     candidateConfigs.add(0, successfulConfig);
                 }
@@ -446,6 +473,7 @@ public class AIChatService {
 
                 // If regular text response, save assistant message and return content
                 if (assistantMsg.getContent() != null) {
+                    log.info("[AI] Procesamiento completado exitosamente. Respuesta generada (longitud={})", assistantMsg.getContent().length());
                     AIChatMessage dbAssistantMsg = AIChatMessage.builder()
                             .guildId(guildId)
                             .channelId(channelId)

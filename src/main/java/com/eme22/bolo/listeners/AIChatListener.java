@@ -88,13 +88,22 @@ public class AIChatListener implements EventListener {
                 return;
             }
 
+            log.info("[AI Listener] Mensaje de chat recibido de usuario '{}' (ID={}) en canal '{}' (ID={}) del servidor '{}'", 
+                     event.getAuthor().getName(), event.getAuthor().getIdLong(), 
+                     event.getChannel().getName(), event.getChannel().getIdLong(), 
+                     event.getGuild().getName());
+
             // Send typing indicator to channel
             event.getChannel().sendTyping().queue();
 
             // Execute asynchronously using the bot's thread pool to not block JDA thread
             bot.getThreadpool().submit(() -> {
+                long listenerStartTime = System.currentTimeMillis();
                 try {
                     AIChatService.AIChatResult result = chatService.processChatMessage(event, cleanMessage);
+                    long duration = System.currentTimeMillis() - listenerStartTime;
+                    log.info("[AI Listener] Procesamiento de IA completado en {} ms.", duration);
+
                     if (result != null && result.getContent() != null && !result.getContent().trim().isEmpty()) {
                         String content = result.getContent().trim();
                         Long dbMessageId = result.getDbMessageId();
@@ -137,9 +146,12 @@ public class AIChatListener implements EventListener {
                                 event.getChannel().sendMessage(content).queue();
                             }
                         }
+                    } else {
+                        log.warn("[AI Listener] El resultado del procesamiento de IA fue nulo o vacío.");
                     }
                 } catch (Exception e) {
-                    log.error("Error processing AI response asynchronously", e);
+                    long duration = System.currentTimeMillis() - listenerStartTime;
+                    log.error("[AI Listener] Error procesando respuesta de IA de manera asíncrona tras {} ms", duration, e);
                     event.getMessage().reply(chatService.getFriendlyErrorMessage(e)).queue();
                 }
             });
