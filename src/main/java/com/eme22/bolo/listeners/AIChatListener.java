@@ -60,8 +60,15 @@ public class AIChatListener implements EventListener {
             isReplyToBot = event.getMessage().getReferencedMessage().getAuthor().getIdLong() == event.getJDA().getSelfUser().getIdLong();
         }
 
-        // 4. Trigger AI if exclusive channel is used OR the bot is mentioned OR it is a reply to the bot
-        if (isExclusiveChannel || isMentioned || isReplyToBot) {
+        // 4. Trigger AI if exclusive channel is used OR (if NOT exclusive-only) the bot is mentioned OR it is a reply to the bot
+        boolean shouldRespond = false;
+        if (isExclusiveChannel) {
+            shouldRespond = true;
+        } else if (!server.isAiExclusive()) {
+            shouldRespond = isMentioned || isReplyToBot;
+        }
+
+        if (shouldRespond) {
             long userId = event.getAuthor().getIdLong();
             if (offenseService.isBanned(userId)) {
                 UserOffense offense = offenseService.getOrCreateOffenses(userId);

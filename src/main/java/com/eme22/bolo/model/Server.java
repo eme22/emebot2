@@ -175,6 +175,10 @@ public class Server extends PanacheEntityBase implements GuildSettingsProvider {
    private boolean aiEnabled = false;
 
    @Builder.Default
+   @Column(name = "server_ai_exclusive", nullable = false)
+   private boolean aiExclusive = false;
+
+   @Builder.Default
    @Column(name = "server_ai_channel_id")
    private Long aiChannelId = 0L;
 

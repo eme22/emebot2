@@ -48,6 +48,7 @@ public class AIChatCmd extends AdminCommand {
                 .addChoice("channel", "channel")
                 .addChoice("mode", "mode")
                 .addChoice("setup", "setup")
+                .addChoice("exclusive", "exclusive")
                 .setRequired(true);
 
         OptionData channelOption = new OptionData(OptionType.CHANNEL, "canal-id", "Canal exclusivo para chatear con la IA (acción 'channel').");
@@ -57,8 +58,9 @@ public class AIChatCmd extends AdminCommand {
         OptionData apiKeyOption = new OptionData(OptionType.STRING, "api-key", "Clave API de OpenAI/DeepSeek (acción 'setup').");
         OptionData baseUrlOption = new OptionData(OptionType.STRING, "base-url", "Base URL personalizada (acción 'setup').");
         OptionData modelOption = new OptionData(OptionType.STRING, "modelo-ia", "Modelo de IA personalizado (acción 'setup').");
+        OptionData exclusiveOption = new OptionData(OptionType.BOOLEAN, "exclusivo", "Habilita o deshabilita la respuesta exclusiva en el canal de IA (acción 'exclusive').");
 
-        this.options = Arrays.asList(actionOption, channelOption, modeOption, apiKeyOption, baseUrlOption, modelOption);
+        this.options = Arrays.asList(actionOption, channelOption, modeOption, apiKeyOption, baseUrlOption, modelOption, exclusiveOption);
     }
 
     @Override
@@ -127,6 +129,22 @@ public class AIChatCmd extends AdminCommand {
                 event.reply("🔒 **Configuración de IA privada guardada de forma segura**.")
                         .setEphemeral(true)
                         .queue();
+                break;
+
+            case "exclusive":
+                OptionMapping exclusiveOpt = event.getOption("exclusivo");
+                if (exclusiveOpt == null) {
+                    event.reply("⚠️ Debes especificar el parámetro `exclusivo` (true/false) para esta acción.").setEphemeral(true).queue();
+                    return;
+                }
+                boolean exclusiveVal = exclusiveOpt.getAsBoolean();
+                server.setAiExclusive(exclusiveVal);
+                server.save();
+                if (exclusiveVal) {
+                    event.reply("🔒 **Respuestas exclusivas activadas**. Ahora la IA solo responderá a mensajes enviados en el canal exclusivo de IA y no atenderá menciones/respuestas en otros canales.").queue();
+                } else {
+                    event.reply("🔓 **Respuestas exclusivas desactivadas**. La IA responderá en el canal exclusivo y a menciones/respuestas en otros canales.").queue();
+                }
                 break;
 
             case "status":
@@ -220,8 +238,27 @@ public class AIChatCmd extends AdminCommand {
                 event.replySuccess("Configuración de IA actualizada. Se recomienda borrar el mensaje original para proteger tu API Key.");
                 break;
 
+            case "exclusive":
+                if (args.length < 2) {
+                    event.replyWarning("Uso: `ai exclusive <true|false>`");
+                    return;
+                }
+                String excStr = args[1].toLowerCase();
+                if ("true".equals(excStr) || "yes".equals(excStr) || "habilitado".equals(excStr) || "enable".equals(excStr)) {
+                    server.setAiExclusive(true);
+                    server.save();
+                    event.replySuccess("Respuestas exclusivas activadas. La IA solo responderá en el canal exclusivo.");
+                } else if ("false".equals(excStr) || "no".equals(excStr) || "deshabilitado".equals(excStr) || "disable".equals(excStr)) {
+                    server.setAiExclusive(false);
+                    server.save();
+                    event.replySuccess("Respuestas exclusivas desactivadas. La IA responderá en otros canales al ser mencionada.");
+                } else {
+                    event.replyError("Valor no válido. Elige `true` o `false`.");
+                }
+                break;
+
             default:
-                event.replyWarning("Acción desconocida. Usa `enable`, `disable`, `channel`, `mode`, `reset` o `status`.");
+                event.replyWarning("Acción desconocida. Usa `enable`, `disable`, `channel`, `mode`, `exclusive`, `reset` o `status`.");
                 break;
         }
     }
@@ -238,6 +275,7 @@ public class AIChatCmd extends AdminCommand {
         long channelId = server.getAiChannelId();
         String channelStr = channelId == 0L ? "Ninguno (Responder a Menciones `@mention`)" : "<#" + channelId + ">";
         builder.addField("Canal Dedicado", channelStr, false);
+        builder.addField("Exclusivo en Canal", server.isAiExclusive() ? "🔒 Sí (Solo responde en el canal dedicado)" : "🔓 No (Responde a menciones en otros canales)", false);
 
         String model = server.getAiModel() != null ? server.getAiModel() : "Global Default (gpt-4o-mini)";
         String baseUrl = server.getAiBaseUrl() != null ? server.getAiBaseUrl() : "Global Default (OpenAI)";
