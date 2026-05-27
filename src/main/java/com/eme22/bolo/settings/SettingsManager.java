@@ -82,14 +82,14 @@ public class SettingsManager implements GuildSettingsManager<Server> {
 
    @Transactional
    public void saveSettings(Server server) {
-      this.serverRepository.persist(server);
+      this.serverRepository.getEntityManager().merge(server);
    }
 
    @Transactional
    public void addRoleManagerToServer(long guildId, com.eme22.bolo.model.RoleManager manager) {
       Server server = this.getSettings(guildId);
       server.addToRoleManagers(manager);
-      this.serverRepository.persist(server);
+      this.serverRepository.getEntityManager().merge(server);
    }
 
    protected Server createDefaultSettings(long guildId) {
