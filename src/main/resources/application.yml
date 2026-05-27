@@ -23,7 +23,7 @@ mp:
   jwt:
     verify:
       issuer: "https://emebot.com"
-  token: DISCORD_TOKEN_PLACEHOLDER
+  token: ${DISCORD_TOKEN}
   shardId: ${JDA_SHARD_ID:0}
   totalShards: ${JDA_TOTAL_SHARDS:1}
 
@@ -51,7 +51,7 @@ config:
   discordChannel: "https://discord.gg/Wt4U4D5GkF"
   nogui-title: "EMBot"
   nogui-message: "Switching to nogui mode. You can manually start in nogui mode by including the -Dnogui=true flag."
-  clientToken: CLIENT_TOKEN_PLACEHOLDER
+  clientToken: ${CLIENT_TOKEN}
   aliases:
     sendmessageas: [ "sendmessageasuser" ]
     settingTEST: [ "status" ]
@@ -147,6 +147,11 @@ config:
     submitartwork: [ "enviararte" ]
     stats: [ "estadisticas" ]
     creatememe: [ "crearmeme" ]
+openai:
+  api-key: ${OPENAI_API_KEY}
+  base-url: https://openrouter.ai/api/v1
+  model: openrouter/free
+  session-timeout-minutes: ${OPENAI_SESSION_TIMEOUT:15}
 
 lavalink:
   servers:
@@ -160,13 +165,13 @@ lavalink:
 
 "%dev":
   jda:
-    token: "DISCORD_TOKEN_PLACEHOLDER"
+    token: ${DISCORD_TOKEN}
   lavalink:
     servers:
       - name: DevNode
         host: 10.241.251.82
         port: 2333
-        password: LAVALINK_PASSWORD_PLACEHOLDER
+        password: ${LAVALINK_PASSWORD}
         region: peru
         secure: false
         timeout: 10000
@@ -174,7 +179,7 @@ lavalink:
     datasource:
       db-kind: mariadb
       username: u15_qmC7fYGOKC
-      password: "DB_PASSWORD_PLACEHOLDER"
+      password: ${DB_PASSWORD}
       jdbc:
         url: jdbc:mariadb://10.241.251.82:3306/s15_mbot
     hibernate-orm:
@@ -187,7 +192,7 @@ lavalink:
     datasource:
       db-kind: mariadb
       username: u15_qmC7fYGOKC
-      password: "DB_PASSWORD_PLACEHOLDER"
+      password: ${DB_PASSWORD}
       jdbc:
         url: jdbc:mariadb://192.168.18.164:3306/s15_mbot
     hibernate-orm:
@@ -199,7 +204,31 @@ lavalink:
       - name: ProdNode
         host: 192.168.18.164
         port: 2333
-        password: LAVALINK_PASSWORD_PLACEHOLDER
+        password: ${LAVALINK_PASSWORD}
         region: peru
         secure: false
         timeout: 10000
+
+"%test":
+  quarkus:
+    datasource:
+      db-kind: h2
+      username: sa
+      password: sa
+      jdbc:
+        url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1
+    hibernate-orm:
+      database:
+        generation: drop-and-create
+      enable-lazy-load-no-trans: true
+  lavalink:
+    servers:
+      - name: TestNode
+        host: 127.0.0.1
+        port: 2333
+        password: testpassword
+        region: us
+        secure: false
+        timeout: 1000
+  jda:
+    token: "dummy-test-token"
