@@ -3,7 +3,9 @@ package com.eme22.bolo.ai;
 import com.eme22.bolo.Bot;
 import com.eme22.bolo.model.AIChatMessage;
 import com.eme22.bolo.model.Server;
+import com.eme22.bolo.model.ServerAIBackupConfig;
 import com.eme22.bolo.repository.AIChatMessageRepository;
+import com.eme22.bolo.repository.ServerAIBackupConfigRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -14,7 +16,6 @@ import lombok.extern.slf4j.Slf4j;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import com.eme22.bolo.repository.AIGlobalConfigRepository;
 import jakarta.transaction.Transactional;
 import java.net.URI;
@@ -43,6 +44,9 @@ public class AIChatService {
 
     @Inject
     AIGlobalConfigRepository aiGlobalConfigRepository;
+
+    @Inject
+    ServerAIBackupConfigRepository serverAIBackupConfigRepository;
 
     @ConfigProperty(name = "openai.api-key")
     String globalApiKey;
@@ -127,6 +131,53 @@ public class AIChatService {
         this.lastSuccessfulConfigIndex = null;
     }
 
+    @Transactional
+    public void saveServerBackupConfig(Long serverId, int index, String apiKey, String baseUrl, String model) {
+        if ("none".equalsIgnoreCase(apiKey) || "clear".equalsIgnoreCase(apiKey)) {
+            serverAIBackupConfigRepository.deleteByServerIdAndIndex(serverId, index);
+            return;
+        }
+
+        ServerAIBackupConfig config = serverAIBackupConfigRepository.findByServerIdAndIndex(serverId, index)
+                .orElse(ServerAIBackupConfig.builder()
+                        .serverId(serverId)
+                        .backupIndex(index)
+                        .build());
+
+        if (apiKey != null) {
+            config.setApiKey(apiKey);
+        }
+        if (baseUrl != null) {
+            config.setBaseUrl("none".equalsIgnoreCase(baseUrl) || "clear".equalsIgnoreCase(baseUrl) ? null : baseUrl);
+        }
+        if (model != null) {
+            config.setModel("none".equalsIgnoreCase(model) || "clear".equalsIgnoreCase(model) ? null : model);
+        }
+
+        if (config.getApiKey() == null || config.getApiKey().isEmpty()) {
+            serverAIBackupConfigRepository.deleteByServerIdAndIndex(serverId, index);
+            return;
+        }
+
+        serverAIBackupConfigRepository.persist(config);
+        this.lastSuccessfulConfigIndex = null;
+    }
+
+    @ActivateRequestContext
+    public List<AIConfig> getServerBackupConfigs(Long serverId, String defaultUrl, String defaultModel, int defaultTimeout) {
+        List<ServerAIBackupConfig> configs = serverAIBackupConfigRepository.findByServerId(serverId);
+        List<AIConfig> result = new ArrayList<>();
+        for (ServerAIBackupConfig c : configs) {
+            if (c.getApiKey() != null && !c.getApiKey().isEmpty() && !"none".equalsIgnoreCase(c.getApiKey())) {
+                String url = c.getBaseUrl() != null && !c.getBaseUrl().isEmpty() ? c.getBaseUrl() : defaultUrl;
+                String model = c.getModel() != null && !c.getModel().isEmpty() ? c.getModel() : defaultModel;
+                result.add(new AIConfig(c.getBackupIndex(), c.getApiKey(), url, model, defaultTimeout));
+            }
+        }
+        return result;
+    }
+
+    @ActivateRequestContext
     public List<AIConfig> getBackupConfigs(String defaultUrl, String defaultModel, int defaultTimeout) {
         List<AIConfig> list = new ArrayList<>();
         for (int i = 1; i <= 10; i++) {
@@ -164,6 +215,16 @@ public class AIChatService {
         }
     }
 
+    @Transactional
+    public void saveSystemPrompt(String type, String prompt) {
+        String key = "system-prompt-" + type;
+        if (prompt == null || "none".equalsIgnoreCase(prompt) || "default".equalsIgnoreCase(prompt)) {
+            aiGlobalConfigRepository.deleteValue(key);
+        } else {
+            aiGlobalConfigRepository.setValue(key, prompt);
+        }
+    }
+
     public String getGlobalApiKey() {
         String dbVal = aiGlobalConfigRepository.getValue("api-key");
         return (dbVal != null && !dbVal.isEmpty()) ? dbVal : globalApiKey;
@@ -191,6 +252,10 @@ public class AIChatService {
 
     public String getGlobalSystemPrompt() {
         return aiGlobalConfigRepository.getValue("system-prompt");
+    }
+
+    public String getGlobalSystemPrompt(String type) {
+        return aiGlobalConfigRepository.getValue("system-prompt-" + type);
     }
 
     private static final int MAX_TOOL_ITERATIONS = 5;
@@ -232,12 +297,13 @@ public class AIChatService {
 
         List<AIConfig> candidateConfigs = new ArrayList<>();
         candidateConfigs.add(new AIConfig(0, apiKey, baseUrl, model, timeoutSeconds));
-        candidateConfigs.addAll(getBackupConfigs(getGlobalBaseUrl(), getGlobalModel(), getGlobalTimeoutSeconds()));
+        candidateConfigs.addAll(getServerBackupConfigs(guildId, getGlobalBaseUrl(), getGlobalModel(), getGlobalTimeoutSeconds()));
+        for (AIConfig b : getBackupConfigs(getGlobalBaseUrl(), getGlobalModel(), getGlobalTimeoutSeconds())) {
+            candidateConfigs.add(new AIConfig(b.getIndex() + 100, b.getApiKey(), b.getBaseUrl(), b.getModel(), b.getTimeoutSeconds()));
+        }
 
-        // Filter out candidate configurations that lack an API key
         candidateConfigs.removeIf(c -> c.getApiKey() == null || c.getApiKey().isEmpty() || "none".equalsIgnoreCase(c.getApiKey()));
 
-        // Reorder candidateConfigs based on lastSuccessfulConfigIndex
         Integer lastSuccessIdx = this.lastSuccessfulConfigIndex;
         if (lastSuccessIdx != null) {
             AIConfig preferred = null;
