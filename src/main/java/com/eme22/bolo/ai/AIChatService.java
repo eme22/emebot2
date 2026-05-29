@@ -336,6 +336,7 @@ public class AIChatService {
                 .build();
         QuarkusTransaction.requiringNew().run(() -> messageRepository.persist(userMsg));
 
+        AIConfig pinnedConfig = null;
         try {
             // Recursive loop to process tool calls
             for (int iteration = 0; iteration < MAX_TOOL_ITERATIONS; iteration++) {
@@ -403,6 +404,12 @@ public class AIChatService {
                 AIConfig successfulConfig = null;
                 List<String> attemptLogs = new ArrayList<>();
 
+                // Pin the successful config if we already found one in a prior iteration of this chat request
+                if (pinnedConfig != null && candidateConfigs.contains(pinnedConfig)) {
+                    candidateConfigs.remove(pinnedConfig);
+                    candidateConfigs.add(0, pinnedConfig);
+                }
+
                 for (AIConfig candidate : candidateConfigs) {
                     long candidateStartTime = System.currentTimeMillis();
                     try {
@@ -443,6 +450,7 @@ public class AIChatService {
 
                         if (response != null && response.getChoices() != null && !response.getChoices().isEmpty()) {
                             successfulConfig = candidate;
+                            pinnedConfig = candidate;
                             this.lastSuccessfulConfigIndex = candidate.getIndex();
                             log.info("[AI Chat] Proveedor #{} [URL: {}, Modelo: {}] completado con éxito en {} ms.", 
                                     candidate.getIndex(), candidate.getBaseUrl(), candidate.getModel(), (System.currentTimeMillis() - candidateStartTime));
@@ -451,6 +459,8 @@ public class AIChatService {
                     } catch (Exception e) {
                         lastException = e;
                         String failReason = e.getMessage() != null ? e.getMessage() : e.toString();
+                        log.warn("[AI Chat] Proveedor #{} [URL: {}, Modelo: {}] falló en iteración {}. Razón: {}", 
+                                candidate.getIndex(), candidate.getBaseUrl(), candidate.getModel(), iteration, failReason);
                         attemptLogs.add(String.format("Proveedor #%d [URL: %s, Modelo: %s] falló tras %d ms. Razón: %s", 
                                 candidate.getIndex(), candidate.getBaseUrl(), candidate.getModel(), (System.currentTimeMillis() - candidateStartTime), failReason));
                     }
