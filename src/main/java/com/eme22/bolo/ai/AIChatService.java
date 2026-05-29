@@ -48,6 +48,9 @@ public class AIChatService {
     @Inject
     ServerAIBackupConfigRepository serverAIBackupConfigRepository;
 
+    @Inject
+    com.eme22.bolo.repository.UserMemoryRepository userMemoryRepository;
+
     @ConfigProperty(name = "openai.api-key")
     String globalApiKey;
 
@@ -258,7 +261,7 @@ public class AIChatService {
         return aiGlobalConfigRepository.getValue("system-prompt-" + type);
     }
 
-    private static final int MAX_TOOL_ITERATIONS = 5;
+    private static final int MAX_TOOL_ITERATIONS = 10;
 
     @ActivateRequestContext
     public AIChatResult processChatMessage(MessageReceivedEvent event, String userMessageContent) {
@@ -351,7 +354,22 @@ public class AIChatService {
                 String userEffectiveName = event.getMember() != null ? event.getMember().getEffectiveName() : event.getAuthor().getName();
                 String currentDateTimeStr = java.time.ZonedDateTime.now(java.time.ZoneId.systemDefault())
                         .format(java.time.format.DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy, HH:mm:ss (z)", new java.util.Locale("es", "ES")));
-                String systemPrompt = "Fecha/Hora actual del servidor: " + currentDateTimeStr + "\n\n" + getSystemPrompt(event.getGuild().getName(), userEffectiveName, botName);
+                
+                // Retrieve long-term memories/gossip for the active user
+                List<com.eme22.bolo.model.UserMemory> activeUserMemories = userMemoryRepository.findActiveMemoriesForUser(guildId, userId);
+                StringBuilder memoryPrompt = new StringBuilder();
+                if (activeUserMemories != null && !activeUserMemories.isEmpty()) {
+                    memoryPrompt.append("\n\n**[DATOS RECORDADOS SOBRE EL USUARIO ACTUAL (MEMORIA A LARGO PLAZO)]**\n");
+                    memoryPrompt.append("Recuerdas las siguientes cosas/chismes sobre '").append(userEffectiveName).append("':\n");
+                    for (com.eme22.bolo.model.UserMemory mem : activeUserMemories) {
+                        memoryPrompt.append("- \"").append(mem.getMemoryText()).append("\"\n");
+                    }
+                    memoryPrompt.append("¡Usa esta información de forma sutil, pícara, graciosa o mordaz en tu conversación para lucir tu memoria u omnisciencia de forma divertida!");
+                }
+
+                String systemPrompt = "Fecha/Hora actual del servidor: " + currentDateTimeStr + "\n\n" 
+                        + getSystemPrompt(event.getGuild().getName(), userEffectiveName, botName) 
+                        + memoryPrompt.toString();
                 apiMessages.add(OpenAIDTO.Message.builder().role("system").content(systemPrompt).build());
 
                 // Map DB history to OpenAI API Messages

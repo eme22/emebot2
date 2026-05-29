@@ -39,6 +39,9 @@ public class GeneralTools {
     @Inject
     com.eme22.imageapi.AnimeImageClient animeImageClient;
 
+    @Inject
+    com.eme22.bolo.repository.UserMemoryRepository userMemoryRepository;
+
     @Produces
     @ApplicationScoped
     public AITool getLatencyTool() {
@@ -994,4 +997,249 @@ public class GeneralTools {
             }
         };
     }
+
+    @Produces
+    @ApplicationScoped
+    public AITool getSaveUserMemoryTool() {
+        return new AITool() {
+            @Override
+            public String getName() {
+                return "save_user_memory";
+            }
+
+            @Override
+            public String getDescription() {
+                return "Guarda un dato, nota, o chisme permanente sobre un usuario específico de Discord en la memoria a largo plazo.";
+            }
+
+            @Override
+            public OpenAIDTO.Tool getDefinition() {
+                Map<String, Object> props = new HashMap<>();
+
+                Map<String, Object> targetUserProp = new HashMap<>();
+                targetUserProp.put("type", "string");
+                targetUserProp.put("description", "ID de Discord o mención del usuario objetivo del chisme/dato a guardar.");
+                props.put("targetUserId", targetUserProp);
+
+                Map<String, Object> memoryTextProp = new HashMap<>();
+                memoryTextProp.put("type", "string");
+                memoryTextProp.put("description", "El dato, chisme o nota que se desea recordar de forma permanente sobre el usuario.");
+                props.put("memoryText", memoryTextProp);
+
+                return OpenAIDTO.Tool.builder()
+                        .type("function")
+                        .function(OpenAIDTO.FunctionDefinition.builder()
+                                .name(getName())
+                                .description(getDescription())
+                                .parameters(OpenAIDTO.ParametersDefinition.builder()
+                                        .type("object")
+                                        .properties(props)
+                                        .required(Arrays.asList("targetUserId", "memoryText"))
+                                        .build())
+                                .build())
+                        .build();
+            }
+
+            @Override
+            public List<Permission> getRequiredUserPermissions() {
+                return Collections.emptyList();
+            }
+
+            @Override
+            public String execute(MessageReceivedEvent event, Map<String, Object> arguments) throws Exception {
+                String targetUserIdStr = (String) arguments.get("targetUserId");
+                String memoryText = (String) arguments.get("memoryText");
+
+                if (targetUserIdStr == null || targetUserIdStr.trim().isEmpty() || memoryText == null || memoryText.trim().isEmpty()) {
+                    return "Error: Faltan los argumentos obligatorios 'targetUserId' o 'memoryText'.";
+                }
+
+                long targetUserId;
+                try {
+                    targetUserId = Long.parseLong(targetUserIdStr.replaceAll("\\D", ""));
+                } catch (NumberFormatException e) {
+                    return "Error: Formato de targetUserId no válido.";
+                }
+
+                net.dv8tion.jda.api.entities.User targetUser = event.getJDA().getUserById(targetUserId);
+                if (targetUser == null) {
+                    try {
+                        targetUser = event.getJDA().retrieveUserById(targetUserId).complete();
+                    } catch (Exception ignored) {}
+                }
+                
+                String targetName = targetUser != null ? targetUser.getName() : "ID: " + targetUserId;
+
+                com.eme22.bolo.model.UserMemory memory = com.eme22.bolo.model.UserMemory.builder()
+                        .guildId(event.getGuild().getIdLong())
+                        .targetUserId(targetUserId)
+                        .memoryText(memoryText)
+                        .createdByUserId(event.getAuthor().getIdLong())
+                        .createdAt(java.time.Instant.now())
+                        .build();
+
+                userMemoryRepository.saveMemory2(memory);
+
+                return String.format("Éxito: Se ha guardado correctamente el recuerdo en memoria a largo plazo sobre %s: \"%s\".", targetName, memoryText);
+            }
+        };
+    }
+
+    @Produces
+    @ApplicationScoped
+    public AITool getGetUserMemoriesTool() {
+        return new AITool() {
+            @Override
+            public String getName() {
+                return "get_user_memories";
+            }
+
+            @Override
+            public String getDescription() {
+                return "Recupera todos los datos, notas o chismes guardados permanentemente en memoria a largo plazo sobre un usuario de Discord específico.";
+            }
+
+            @Override
+            public OpenAIDTO.Tool getDefinition() {
+                Map<String, Object> props = new HashMap<>();
+
+                Map<String, Object> targetUserProp = new HashMap<>();
+                targetUserProp.put("type", "string");
+                targetUserProp.put("description", "ID de Discord o mención del usuario del cual recuperar recuerdos.");
+                props.put("targetUserId", targetUserProp);
+
+                return OpenAIDTO.Tool.builder()
+                        .type("function")
+                        .function(OpenAIDTO.FunctionDefinition.builder()
+                                .name(getName())
+                                .description(getDescription())
+                                .parameters(OpenAIDTO.ParametersDefinition.builder()
+                                        .type("object")
+                                        .properties(props)
+                                        .required(Collections.singletonList("targetUserId"))
+                                        .build())
+                                .build())
+                        .build();
+            }
+
+            @Override
+            public List<Permission> getRequiredUserPermissions() {
+                return Collections.emptyList();
+            }
+
+            @Override
+            public String execute(MessageReceivedEvent event, Map<String, Object> arguments) throws Exception {
+                String targetUserIdStr = (String) arguments.get("targetUserId");
+                if (targetUserIdStr == null || targetUserIdStr.trim().isEmpty()) {
+                    return "Error: Falta el argumento obligatorio 'targetUserId'.";
+                }
+
+                long targetUserId;
+                try {
+                    targetUserId = Long.parseLong(targetUserIdStr.replaceAll("\\D", ""));
+                } catch (NumberFormatException e) {
+                    return "Error: Formato de targetUserId no válido.";
+                }
+
+                net.dv8tion.jda.api.entities.User targetUser = event.getJDA().getUserById(targetUserId);
+                if (targetUser == null) {
+                    try {
+                        targetUser = event.getJDA().retrieveUserById(targetUserId).complete();
+                    } catch (Exception ignored) {}
+                }
+                
+                String targetName = targetUser != null ? targetUser.getName() : "ID: " + targetUserId;
+
+                List<com.eme22.bolo.model.UserMemory> memories = userMemoryRepository.findActiveMemoriesForUser(event.getGuild().getIdLong(), targetUserId);
+
+                if (memories == null || memories.isEmpty()) {
+                    return String.format("No hay recuerdos o chismes guardados en memoria a largo plazo sobre %s.", targetName);
+                }
+
+                StringBuilder sb = new StringBuilder(String.format("Recuerdos y chismes guardados sobre %s (Total: %d):\n", targetName, memories.size()));
+                for (com.eme22.bolo.model.UserMemory mem : memories) {
+                    String authorName = "Desconocido";
+                    net.dv8tion.jda.api.entities.User author = event.getJDA().getUserById(mem.getCreatedByUserId());
+                    if (author == null) {
+                        try {
+                            author = event.getJDA().retrieveUserById(mem.getCreatedByUserId()).complete();
+                        } catch (Exception ignored) {}
+                    }
+                    if (author != null) {
+                        authorName = author.getName();
+                    }
+                    sb.append(String.format("- [ID: %d] \"%s\" (Revelado por %s el %s)\n",
+                            mem.getId(), mem.getMemoryText(), authorName, mem.getCreatedAt().toString()));
+                }
+                return sb.toString();
+            }
+        };
+    }
+
+    @Produces
+    @ApplicationScoped
+    public AITool getDeleteUserMemoryTool() {
+        return new AITool() {
+            @Override
+            public String getName() {
+                return "delete_user_memory";
+            }
+
+            @Override
+            public String getDescription() {
+                return "Elimina de forma permanente un chisme, dato o recuerdo de la memoria a largo plazo utilizando el ID único del recuerdo.";
+            }
+
+            @Override
+            public OpenAIDTO.Tool getDefinition() {
+                Map<String, Object> props = new HashMap<>();
+
+                Map<String, Object> memoryIdProp = new HashMap<>();
+                memoryIdProp.put("type", "integer");
+                memoryIdProp.put("description", "ID único del recuerdo que se desea eliminar de la base de datos.");
+                props.put("memoryId", memoryIdProp);
+
+                return OpenAIDTO.Tool.builder()
+                        .type("function")
+                        .function(OpenAIDTO.FunctionDefinition.builder()
+                                .name(getName())
+                                .description(getDescription())
+                                .parameters(OpenAIDTO.ParametersDefinition.builder()
+                                        .type("object")
+                                        .properties(props)
+                                        .required(Collections.singletonList("memoryId"))
+                                        .build())
+                                .build())
+                        .build();
+            }
+
+            @Override
+            public List<Permission> getRequiredUserPermissions() {
+                return Collections.emptyList();
+            }
+
+            @Override
+            public String execute(MessageReceivedEvent event, Map<String, Object> arguments) throws Exception {
+                Number memoryIdNum = (Number) arguments.get("memoryId");
+                if (memoryIdNum == null) {
+                    return "Error: Falta el parámetro obligatorio 'memoryId'.";
+                }
+
+                long memoryId = memoryIdNum.longValue();
+                com.eme22.bolo.model.UserMemory memory = userMemoryRepository.findById(memoryId);
+
+                if (memory == null) {
+                    return String.format("Error: No se encontró ningún recuerdo con el ID %d en la base de datos.", memoryId);
+                }
+
+                if (!memory.getGuildId().equals(event.getGuild().getIdLong())) {
+                    return "Error: No tienes permiso para eliminar recuerdos de otros servidores.";
+                }
+
+                userMemoryRepository.deleteMemory(memoryId);
+                return String.format("Éxito: El recuerdo con ID %d (\"%s\") ha sido eliminado y olvidado de forma permanente.", memoryId, memory.getMemoryText());
+            }
+        };
+    }
 }
+
