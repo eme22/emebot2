@@ -349,21 +349,14 @@ public class GeneralTools {
                 sessionManager.forceReset(guildId, channelId, userId);
                 messageRepository.deleteSession(activeSession);
 
-                Boolean severe = (Boolean) arguments.get("severe");
-                UserOffense offense;
-                if (Boolean.TRUE.equals(severe)) {
-                    userOffenseService.setOffenseCount(userId, 5);
-                    offense = userOffenseService.getOrCreateOffenses(userId);
-                } else {
-                    offense = userOffenseService.addOffense(userId);
-                }
+                UserOffense offense = userOffenseService.addOffense(userId);
 
                 int currentOffenses = offense.getOffenseCount();
                 String alertText;
                 if (currentOffenses >= 5) {
                     alertText = String.format("\n[SISTEMA DE SEGURIDAD] ¡El usuario ha sido bloqueado temporalmente por acumular %d ofensas! No podrá conversar con el bot hasta <t:%d:F>.", currentOffenses, offense.getBanUntil().getEpochSecond());
                 } else {
-                    alertText = String.format("\n[SISTEMA DESEGURIDAD] Advertencia: Esta es la ofensa número %d del usuario. Si alcanza 5 ofensas, será bloqueado temporalmente.", currentOffenses);
+                    alertText = String.format("\n[SISTEMA DE SEGURIDAD] Advertencia: Esta es la ofensa número %d del usuario. Si alcanza 5 ofensas, será bloqueado temporalmente.", currentOffenses);
                 }
 
                 String reason = (String) arguments.get("reason");
