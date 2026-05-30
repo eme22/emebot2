@@ -468,14 +468,11 @@ public class GeneralTools {
                 net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel targetChannel = null;
                 String channelIdStr = (String) arguments.get("channelId");
                 if (channelIdStr != null && !channelIdStr.trim().isEmpty()) {
-                    try {
-                        long targetChannelId = Long.parseLong(channelIdStr.replaceAll("\\D", ""));
-                        net.dv8tion.jda.api.entities.channel.middleman.GuildChannel gc = event.getGuild().getGuildChannelById(targetChannelId);
-                        if (gc instanceof net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel) {
-                            targetChannel = (net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel) gc;
-                        }
-                    } catch (Exception e) {
-                        return "Error: ID de canal inválido o no encontrado.";
+                    net.dv8tion.jda.api.entities.channel.middleman.GuildChannel gc = getChannelByIdOrName(event.getGuild(), channelIdStr);
+                    if (gc instanceof net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel) {
+                        targetChannel = (net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel) gc;
+                    } else {
+                        return "Error: ID o nombre de canal de texto inválido o no encontrado.";
                     }
                 }
 
@@ -726,8 +723,7 @@ public class GeneralTools {
                     return "Error: Faltan los argumentos requeridos.";
                 }
 
-                long targetUserId = Long.parseLong(targetUserIdStr.replaceAll("\\D", ""));
-                net.dv8tion.jda.api.entities.Member targetMember = event.getGuild().getMemberById(targetUserId);
+                net.dv8tion.jda.api.entities.Member targetMember = getMemberByIdOrName(event.getGuild(), targetUserIdStr);
 
                 if (targetMember == null) {
                     return "Error: No se encontró al usuario objetivo en el servidor.";
@@ -1181,6 +1177,52 @@ public class GeneralTools {
                 return String.format("Éxito: El recuerdo con ID %d (\"%s\") ha sido eliminado y olvidado de forma permanente.", memoryId, memory.getMemoryText());
             }
         };
+    }
+
+    private net.dv8tion.jda.api.entities.channel.middleman.GuildChannel getChannelByIdOrName(Guild guild, String idOrName) {
+        if (idOrName == null || idOrName.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            String sanitized = idOrName.replaceAll("\\D", "");
+            if (!sanitized.isEmpty()) {
+                net.dv8tion.jda.api.entities.channel.middleman.GuildChannel channel = guild.getGuildChannelById(sanitized);
+                if (channel != null) return channel;
+            }
+        } catch (Exception ignored) {}
+
+        String cleanName = idOrName.replace("#", "").trim();
+        for (net.dv8tion.jda.api.entities.channel.middleman.GuildChannel channel : guild.getChannels()) {
+            if (channel.getName().equalsIgnoreCase(idOrName) || channel.getName().equalsIgnoreCase(cleanName)) {
+                return channel;
+            }
+        }
+        return null;
+    }
+
+    private net.dv8tion.jda.api.entities.Member getMemberByIdOrName(Guild guild, String idOrName) {
+        if (idOrName == null || idOrName.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            String sanitized = idOrName.replaceAll("\\D", "");
+            if (!sanitized.isEmpty()) {
+                net.dv8tion.jda.api.entities.Member member = guild.getMemberById(sanitized);
+                if (member != null) return member;
+            }
+        } catch (Exception ignored) {}
+
+        String cleanName = idOrName.replace("@", "").trim();
+        for (net.dv8tion.jda.api.entities.Member member : guild.getMembers()) {
+            if (member.getUser().getName().equalsIgnoreCase(idOrName) || 
+                member.getEffectiveName().equalsIgnoreCase(idOrName) ||
+                member.getUser().getAsMention().equals(idOrName) ||
+                member.getEffectiveName().equalsIgnoreCase(cleanName) ||
+                member.getUser().getName().equalsIgnoreCase(cleanName)) {
+                return member;
+            }
+        }
+        return null;
     }
 }
 

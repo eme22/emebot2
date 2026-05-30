@@ -119,7 +119,7 @@ public class AdminTools {
 
                 var action = guild.createTextChannel(name);
                 if (catId != null && !catId.trim().isEmpty()) {
-                    Category category = guild.getCategoryById(catId);
+                    Category category = getCategoryByIdOrName(guild, catId);
                     if (category != null) {
                         action = action.setParent(category);
                     }
@@ -152,7 +152,7 @@ public class AdminTools {
 
                 var action = guild.createVoiceChannel(name);
                 if (catId != null && !catId.trim().isEmpty()) {
-                    Category category = guild.getCategoryById(catId);
+                    Category category = getCategoryByIdOrName(guild, catId);
                     if (category != null) {
                         action = action.setParent(category);
                     }
@@ -181,7 +181,7 @@ public class AdminTools {
                 String chId = (String) arguments.get("channelId");
                 String newName = (String) arguments.get("newName");
                 Guild guild = event.getGuild();
-                GuildChannel existing = guild.getGuildChannelById(chId);
+                GuildChannel existing = getChannelByIdOrName(guild, chId);
                 if (existing == null) return "Error: No se encontró el canal con ID " + chId;
 
                 if (existing instanceof net.dv8tion.jda.api.entities.channel.attribute.ICopyableChannel copyable) {
@@ -214,7 +214,7 @@ public class AdminTools {
             @Override public String execute(MessageReceivedEvent event, Map<String, Object> arguments) throws Exception {
                 String chId = (String) arguments.get("channelId");
                 Guild guild = event.getGuild();
-                GuildChannel channel = guild.getGuildChannelById(chId);
+                GuildChannel channel = getChannelByIdOrName(guild, chId);
                 if (channel == null) return "Error: No se encontró el canal con ID " + chId;
 
                 String name = channel.getName();
@@ -241,9 +241,9 @@ public class AdminTools {
                 String uId = (String) arguments.get("userId");
                 String rId = (String) arguments.get("roleId");
                 Guild guild = event.getGuild();
-                var member = guild.getMemberById(uId);
+                var member = getMemberByIdOrName(guild, uId);
                 if (member == null) return "Error: No se encontró el miembro del servidor con ID " + uId;
-                Role role = guild.getRoleById(rId);
+                Role role = getRoleByIdOrName(guild, rId);
                 if (role == null) return "Error: No se encontró el rol con ID " + rId;
 
                 guild.addRoleToMember(member, role).complete();
@@ -269,9 +269,9 @@ public class AdminTools {
                 String uId = (String) arguments.get("userId");
                 String rId = (String) arguments.get("roleId");
                 Guild guild = event.getGuild();
-                var member = guild.getMemberById(uId);
+                var member = getMemberByIdOrName(guild, uId);
                 if (member == null) return "Error: No se encontró el miembro del servidor con ID " + uId;
-                Role role = guild.getRoleById(rId);
+                Role role = getRoleByIdOrName(guild, rId);
                 if (role == null) return "Error: No se encontró el rol con ID " + rId;
 
                 guild.removeRoleFromMember(member, role).complete();
@@ -469,12 +469,12 @@ public class AdminTools {
                 if (roleIds.isEmpty()) return "Error: Debe proporcionar al menos un ID de rol en 'roleIds'.";
                 
                 Guild guild = event.getGuild();
-                TextChannel textChannel = guild.getTextChannelById(channelIdStr);
-                if (textChannel == null) return "Error: No se encontró el canal de texto con ID " + channelIdStr;
+                GuildChannel gc = getChannelByIdOrName(guild, channelIdStr);
+                if (!(gc instanceof TextChannel textChannel)) return "Error: No se encontró el canal de texto con ID/nombre " + channelIdStr;
                 
                 List<Role> roles = new ArrayList<>();
                 for (String rId : roleIds) {
-                    Role role = guild.getRoleById(rId);
+                    Role role = getRoleByIdOrName(guild, rId);
                     if (role == null) {
                         return "Error: No se encontró el rol con ID " + rId + " en este servidor.";
                     }
@@ -544,7 +544,7 @@ public class AdminTools {
                 Boolean nsfw = (Boolean) arguments.get("nsfw");
                 Integer slowmode = arguments.get("slowmode") != null ? ((Number) arguments.get("slowmode")).intValue() : null;
                 Guild guild = event.getGuild();
-                GuildChannel channel = guild.getGuildChannelById(channelId);
+                GuildChannel channel = getChannelByIdOrName(guild, channelId);
                 if (channel == null) return "Error: No se encontró el canal con ID " + channelId + ".";
                 List<String> changes = new ArrayList<>();
                 if (name != null && !name.trim().isEmpty()) {
@@ -624,7 +624,7 @@ public class AdminTools {
                 if (name == null || name.trim().isEmpty()) return "Error: Falta el parámetro 'name'.";
                 var action = guild.createNewsChannel(name);
                 if (catId != null && !catId.trim().isEmpty()) {
-                    Category category = guild.getCategoryById(catId);
+                    Category category = getCategoryByIdOrName(guild, catId);
                     if (category != null) action = action.setParent(category);
                 }
                 if (topic != null && !topic.trim().isEmpty()) {
@@ -659,7 +659,7 @@ public class AdminTools {
                 if (name == null || name.trim().isEmpty()) return "Error: Falta el parámetro 'name'.";
                 var action = guild.createStageChannel(name);
                 if (catId != null && !catId.trim().isEmpty()) {
-                    Category category = guild.getCategoryById(catId);
+                    Category category = getCategoryByIdOrName(guild, catId);
                     if (category != null) action = action.setParent(category);
                 }
                 if (topic != null && !topic.trim().isEmpty()) {
@@ -689,14 +689,14 @@ public class AdminTools {
                 String channelId = (String) arguments.get("channelId");
                 String catId = (String) arguments.get("categoryId");
                 Guild guild = event.getGuild();
-                GuildChannel channel = guild.getGuildChannelById(channelId);
+                GuildChannel channel = getChannelByIdOrName(guild, channelId);
                 if (channel == null) return "Error: No se encontró el canal con ID " + channelId + ".";
                 if (!(channel instanceof StandardGuildChannel sgc)) {
                     return "Error: Este tipo de canal no se puede mover a una categoría.";
                 }
                 Category category = null;
                 if (catId != null && !catId.trim().isEmpty()) {
-                    category = guild.getCategoryById(catId);
+                    category = getCategoryByIdOrName(guild, catId);
                     if (category == null) return "Error: No se encontró la categoría con ID " + catId + ".";
                 }
                 sgc.getManager().setParent(category).complete();
@@ -734,15 +734,15 @@ public class AdminTools {
                 String allowStr = (String) arguments.get("allowPermissions");
                 String denyStr = (String) arguments.get("denyPermissions");
                 Guild guild = event.getGuild();
-                GuildChannel channel = guild.getGuildChannelById(channelId);
+                GuildChannel channel = getChannelByIdOrName(guild, channelId);
                 if (channel == null) return "Error: No se encontró el canal con ID " + channelId + ".";
                 IPermissionHolder holder;
                 if ("role".equalsIgnoreCase(targetType)) {
-                    Role role = guild.getRoleById(targetId);
+                    Role role = getRoleByIdOrName(guild, targetId);
                     if (role == null) return "Error: No se encontró el rol con ID " + targetId + ".";
                     holder = role;
                 } else if ("user".equalsIgnoreCase(targetType)) {
-                    Member member = guild.getMemberById(targetId);
+                    Member member = getMemberByIdOrName(guild, targetId);
                     if (member == null) return "Error: No se encontró el miembro con ID " + targetId + " en este servidor.";
                     holder = member;
                 } else {
@@ -774,5 +774,92 @@ public class AdminTools {
                 return bits;
             }
         };
+    }
+
+    private GuildChannel getChannelByIdOrName(Guild guild, String idOrName) {
+        if (idOrName == null || idOrName.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            String sanitized = idOrName.replaceAll("\\D", "");
+            if (!sanitized.isEmpty()) {
+                GuildChannel channel = guild.getGuildChannelById(sanitized);
+                if (channel != null) return channel;
+            }
+        } catch (Exception ignored) {}
+
+        String cleanName = idOrName.replace("#", "").trim();
+        for (GuildChannel channel : guild.getChannels()) {
+            if (channel.getName().equalsIgnoreCase(idOrName) || channel.getName().equalsIgnoreCase(cleanName)) {
+                return channel;
+            }
+        }
+        return null;
+    }
+
+    private Category getCategoryByIdOrName(Guild guild, String idOrName) {
+        if (idOrName == null || idOrName.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            String sanitized = idOrName.replaceAll("\\D", "");
+            if (!sanitized.isEmpty()) {
+                Category category = guild.getCategoryById(sanitized);
+                if (category != null) return category;
+            }
+        } catch (Exception ignored) {}
+
+        for (Category category : guild.getCategories()) {
+            if (category.getName().equalsIgnoreCase(idOrName)) {
+                return category;
+            }
+        }
+        return null;
+    }
+
+    private Role getRoleByIdOrName(Guild guild, String idOrName) {
+        if (idOrName == null || idOrName.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            String sanitized = idOrName.replaceAll("\\D", "");
+            if (!sanitized.isEmpty()) {
+                Role role = guild.getRoleById(sanitized);
+                if (role != null) return role;
+            }
+        } catch (Exception ignored) {}
+
+        String cleanName = idOrName.replace("@", "").trim();
+        for (Role role : guild.getRoles()) {
+            if (role.getName().equalsIgnoreCase(idOrName) || role.getName().equalsIgnoreCase(cleanName)) {
+                return role;
+            }
+        }
+        return null;
+    }
+
+    private Member getMemberByIdOrName(Guild guild, String idOrName) {
+        if (idOrName == null || idOrName.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            String sanitized = idOrName.replaceAll("\\D", "");
+            if (!sanitized.isEmpty()) {
+                Member member = guild.getMemberById(sanitized);
+                if (member != null) return member;
+            }
+        } catch (Exception ignored) {}
+
+        String cleanName = idOrName.replace("@", "").trim();
+        for (Member member : guild.getMembers()) {
+            if (member.getUser().getName().equalsIgnoreCase(idOrName) || 
+                member.getEffectiveName().equalsIgnoreCase(idOrName) ||
+                member.getUser().getAsMention().equals(idOrName) ||
+                member.getEffectiveName().equalsIgnoreCase(cleanName) ||
+                member.getUser().getName().equalsIgnoreCase(cleanName)) {
+                return member;
+            }
+        }
+        return null;
     }
 }
