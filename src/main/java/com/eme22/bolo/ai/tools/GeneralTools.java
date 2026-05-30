@@ -383,7 +383,7 @@ public class GeneralTools {
 
             @Override
             public String getDescription() {
-                return "Obtiene los mensajes de un canal de texto (por defecto el actual) para leer las conversaciones como un miembro normal del servidor. Permite obtener bloques de mensajes indicando un límite y un offset de paginación.";
+                return "Obtiene los mensajes de un canal de texto (por defecto el actual) para leer las conversaciones como un miembro normal del servidor. Permite paginar eficientemente hacia atrás o adelante usando IDs de mensajes de referencia.";
             }
 
             @Override
@@ -392,21 +392,30 @@ public class GeneralTools {
                 
                 Map<String, Object> limitProp = new HashMap<>();
                 limitProp.put("type", "integer");
-                limitProp.put("description", "Número de mensajes a obtener (por defecto 20, máximo 50).");
+                limitProp.put("description", "Número de mensajes a obtener (por defecto 50, máximo 200).");
                 limitProp.put("minimum", 1);
-                limitProp.put("maximum", 50);
+                limitProp.put("maximum", 200);
                 props.put("limit", limitProp);
 
-                Map<String, Object> offsetProp = new HashMap<>();
-                offsetProp.put("type", "integer");
-                offsetProp.put("description", "Número de mensajes recientes a saltar / omitir para paginar y leer mensajes más antiguos en bloques.");
-                offsetProp.put("minimum", 0);
-                props.put("offset", offsetProp);
+                Map<String, Object> beforeMessageIdProp = new HashMap<>();
+                beforeMessageIdProp.put("type", "string");
+                beforeMessageIdProp.put("description", "ID de mensaje opcional para paginar hacia atrás. Obtiene los mensajes anteriores (más antiguos) a este ID.");
+                props.put("beforeMessageId", beforeMessageIdProp);
+
+                Map<String, Object> afterMessageIdProp = new HashMap<>();
+                afterMessageIdProp.put("type", "string");
+                afterMessageIdProp.put("description", "ID de mensaje opcional para paginar hacia adelante. Obtiene los mensajes posteriores (más nuevos) a este ID.");
+                props.put("afterMessageId", afterMessageIdProp);
 
                 Map<String, Object> channelIdProp = new HashMap<>();
                 channelIdProp.put("type", "string");
                 channelIdProp.put("description", "ID opcional del canal de texto que se desea leer. Por defecto se lee el canal actual.");
                 props.put("channelId", channelIdProp);
+
+                Map<String, Object> startDateProp = new HashMap<>();
+                startDateProp.put("type", "string");
+                startDateProp.put("description", "Fecha/hora de inicio opcional en formato ISO-8601 (YYYY-MM-DD o YYYY-MM-DDTHH:mm:ssZ) desde la cual empezar a leer hacia adelante.");
+                props.put("startDate", startDateProp);
 
                 return OpenAIDTO.Tool.builder()
                         .type("function")
@@ -431,14 +440,29 @@ public class GeneralTools {
             public String execute(MessageReceivedEvent event, Map<String, Object> arguments) throws Exception {
                 Number limitNum = (Number) arguments.get("limit");
                 int limit = limitNum != null ? limitNum.intValue() : 50;
-                if (limit < 1 || limit > 50) {
+                if (limit < 1 || limit > 200) {
                     limit = 50;
                 }
 
-                Number offsetNum = (Number) arguments.get("offset");
-                int offset = offsetNum != null ? offsetNum.intValue() : 0;
-                if (offset < 0) {
-                    offset = 0;
+                java.time.Instant startInstant = null;
+                String startDateStr = (String) arguments.get("startDate");
+                if (startDateStr != null && !startDateStr.trim().isEmpty()) {
+                    startDateStr = startDateStr.trim();
+                    try {
+                        startInstant = java.time.Instant.parse(startDateStr);
+                    } catch (Exception e1) {
+                        try {
+                            java.time.LocalDate localDate = java.time.LocalDate.parse(startDateStr);
+                            startInstant = localDate.atStartOfDay(java.time.ZoneOffset.UTC).toInstant();
+                        } catch (Exception e2) {
+                            try {
+                                java.time.LocalDateTime localDateTime = java.time.LocalDateTime.parse(startDateStr);
+                                startInstant = localDateTime.toInstant(java.time.ZoneOffset.UTC);
+                            } catch (Exception e3) {
+                                return "Error: Formato de fecha 'startDate' inválido. Debe ser YYYY-MM-DD o YYYY-MM-DDTHH:mm:ssZ.";
+                            }
+                        }
+                    }
                 }
 
                 net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel targetChannel = null;
@@ -464,35 +488,96 @@ public class GeneralTools {
                     return "Error: Acceso denegado. El usuario que realiza la petición no tiene permisos para ver o leer este canal.";
                 }
 
-                List<net.dv8tion.jda.api.entities.Message> history;
-                if (offset == 0) {
-                    history = targetChannel.getHistory().retrievePast(limit).complete();
-                } else {
-                    history = targetChannel.getIterableHistory().stream()
-                            .skip(offset)
-                            .limit(limit)
-                            .collect(java.util.stream.Collectors.toList());
+                String beforeId = (String) arguments.get("beforeMessageId");
+                String afterId = (String) arguments.get("afterMessageId");
+
+                if (startInstant != null && (afterId == null || afterId.trim().isEmpty())) {
+                    long snowflakeId = (startInstant.toEpochMilli() - 1420070400000L) << 22;
+                    afterId = String.valueOf(snowflakeId);
                 }
 
-                if (history == null || history.isEmpty()) {
+                Map<Long, net.dv8tion.jda.api.entities.Message> messageMap = new LinkedHashMap<>();
+                int remaining = limit;
+                String currentBeforeId = (beforeId != null && !beforeId.trim().isEmpty()) ? beforeId.trim() : null;
+                String currentAfterId = (afterId != null && !afterId.trim().isEmpty()) ? afterId.trim() : null;
+
+                while (remaining > 0) {
+                    int fetchSize = Math.min(remaining, 100);
+                    List<net.dv8tion.jda.api.entities.Message> batch;
+
+                    if (currentBeforeId != null) {
+                        batch = targetChannel.getHistoryBefore(currentBeforeId, fetchSize).complete().getRetrievedHistory();
+                    } else if (currentAfterId != null) {
+                        batch = targetChannel.getHistoryAfter(currentAfterId, fetchSize).complete().getRetrievedHistory();
+                    } else {
+                        if (messageMap.isEmpty()) {
+                            batch = targetChannel.getHistory().retrievePast(fetchSize).complete();
+                        } else {
+                            long oldestId = Long.MAX_VALUE;
+                            for (net.dv8tion.jda.api.entities.Message m : messageMap.values()) {
+                                if (m.getIdLong() < oldestId) {
+                                    oldestId = m.getIdLong();
+                                }
+                            }
+                            batch = targetChannel.getHistoryBefore(oldestId, fetchSize).complete().getRetrievedHistory();
+                        }
+                    }
+
+                    if (batch == null || batch.isEmpty()) {
+                        break;
+                    }
+
+                    int addedCount = 0;
+                    for (net.dv8tion.jda.api.entities.Message m : batch) {
+                        if (!messageMap.containsKey(m.getIdLong())) {
+                            messageMap.put(m.getIdLong(), m);
+                            addedCount++;
+                        }
+                    }
+
+                    remaining -= addedCount;
+
+                    if (batch.size() < fetchSize || addedCount == 0) {
+                        break;
+                    }
+
+                    if (currentBeforeId != null) {
+                        long oldestId = Long.MAX_VALUE;
+                        for (net.dv8tion.jda.api.entities.Message m : batch) {
+                            if (m.getIdLong() < oldestId) {
+                                oldestId = m.getIdLong();
+                            }
+                        }
+                        currentBeforeId = String.valueOf(oldestId);
+                    } else if (currentAfterId != null) {
+                        long newestId = Long.MIN_VALUE;
+                        for (net.dv8tion.jda.api.entities.Message m : batch) {
+                            if (m.getIdLong() > newestId) {
+                                newestId = m.getIdLong();
+                            }
+                        }
+                        currentAfterId = String.valueOf(newestId);
+                    }
+                }
+
+                if (messageMap.isEmpty()) {
                     return "No hay mensajes en el rango especificado para este canal.";
                 }
 
-                // Reversar para orden cronológico (más antiguo al más nuevo)
-                List<net.dv8tion.jda.api.entities.Message> reversedHistory = new ArrayList<>(history);
-                Collections.reverse(reversedHistory);
+                List<net.dv8tion.jda.api.entities.Message> sortedHistory = new ArrayList<>(messageMap.values());
+                sortedHistory.sort(Comparator.comparingLong(net.dv8tion.jda.api.entities.Message::getIdLong));
 
-                StringBuilder sb = new StringBuilder(String.format("Mensajes en el canal '%s' (orden cronológico, offset: %d, limit: %d):\n", targetChannel.getName(), offset, limit));
-                for (net.dv8tion.jda.api.entities.Message msg : reversedHistory) {
+                StringBuilder sb = new StringBuilder();
+                sb.append(String.format("Mensajes en el canal '%s' (orden cronológico, limit: %d):\n", targetChannel.getName(), limit));
+
+                for (net.dv8tion.jda.api.entities.Message msg : sortedHistory) {
                     String content = msg.getContentRaw();
                     if (content.trim().isEmpty()) {
                         continue;
                     }
-                    // Formatear fecha y hora completa de creación
                     String timeStr = msg.getTimeCreated().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
                     String authorName = msg.getMember() != null ? msg.getMember().getEffectiveName() : msg.getAuthor().getName();
                     
-                    // Detectar si el mensaje es una respuesta (Reply) para mantener el contexto
                     String refStr = "";
                     net.dv8tion.jda.api.entities.Message refMsg = msg.getReferencedMessage();
                     if (refMsg != null) {
@@ -504,153 +589,9 @@ public class GeneralTools {
                         refStr = String.format(" (en respuesta a %s: \"%s\")", refAuthor, refContent);
                     }
                     
-                    sb.append(String.format("- [%s] %s%s: %s\n", timeStr, authorName, refStr, content));
+                    sb.append(String.format("- [ID: %s] [%s] %s%s: %s\n", msg.getId(), timeStr, authorName, refStr, content));
                 }
                 return sb.toString();
-            }
-        };
-    }
-
-    @Produces
-    @ApplicationScoped
-    public AITool getMessageOffsetByDateTool() {
-        return new AITool() {
-            @Override
-            public String getName() {
-                return "get_message_offset_by_date";
-            }
-
-            @Override
-            public String getDescription() {
-                return "Calcula la cantidad de mensajes (offset) enviados en un canal desde una fecha específica (formato YYYY-MM-DD o ISO-8601) hasta el momento actual. Úsala para saber cuántos mensajes saltar en get_channel_history.";
-            }
-
-            @Override
-            public OpenAIDTO.Tool getDefinition() {
-                Map<String, Object> props = new HashMap<>();
-
-                Map<String, Object> startDateProp = new HashMap<>();
-                startDateProp.put("type", "string");
-                startDateProp.put("description", "Fecha de inicio en formato ISO-8601 (por ejemplo: YYYY-MM-DD, o YYYY-MM-DDTHH:mm:ssZ) desde la cual contar.");
-                props.put("startDate", startDateProp);
-
-                Map<String, Object> channelIdProp = new HashMap<>();
-                channelIdProp.put("type", "string");
-                channelIdProp.put("description", "ID opcional del canal de texto. Por defecto usa el canal actual.");
-                props.put("channelId", channelIdProp);
-
-                return OpenAIDTO.Tool.builder()
-                        .type("function")
-                        .function(OpenAIDTO.FunctionDefinition.builder()
-                                .name(getName())
-                                .description(getDescription())
-                                .parameters(OpenAIDTO.ParametersDefinition.builder()
-                                        .type("object")
-                                        .properties(props)
-                                        .required(Collections.singletonList("startDate"))
-                                        .build())
-                                .build())
-                        .build();
-            }
-
-            @Override
-            public List<Permission> getRequiredUserPermissions() {
-                return Collections.emptyList();
-            }
-
-            @Override
-            public String execute(MessageReceivedEvent event, Map<String, Object> arguments) throws Exception {
-                String startDateStr = (String) arguments.get("startDate");
-                if (startDateStr == null || startDateStr.trim().isEmpty()) {
-                    return "Error: Falta el parámetro obligatorio 'startDate'.";
-                }
-
-                java.time.Instant startInstant = null;
-                startDateStr = startDateStr.trim();
-                try {
-                    startInstant = java.time.Instant.parse(startDateStr);
-                } catch (Exception e1) {
-                    try {
-                        java.time.LocalDate localDate = java.time.LocalDate.parse(startDateStr);
-                        startInstant = localDate.atStartOfDay(java.time.ZoneOffset.UTC).toInstant();
-                    } catch (Exception e2) {
-                        try {
-                            java.time.LocalDateTime localDateTime = java.time.LocalDateTime.parse(startDateStr);
-                            startInstant = localDateTime.toInstant(java.time.ZoneOffset.UTC);
-                        } catch (Exception e3) {
-                            return "Error: Formato de fecha 'startDate' inválido. Debe ser YYYY-MM-DD o YYYY-MM-DDTHH:mm:ssZ.";
-                        }
-                    }
-                }
-
-                net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel targetChannel = null;
-                String channelIdStr = (String) arguments.get("channelId");
-                if (channelIdStr != null && !channelIdStr.trim().isEmpty()) {
-                    try {
-                        long targetChannelId = Long.parseLong(channelIdStr.replaceAll("\\D", ""));
-                        net.dv8tion.jda.api.entities.channel.middleman.GuildChannel gc = event.getGuild().getGuildChannelById(targetChannelId);
-                        if (gc instanceof net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel) {
-                            targetChannel = (net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel) gc;
-                        }
-                    } catch (Exception e) {
-                        return "Error: ID de canal inválido o no encontrado.";
-                    }
-                }
-
-                if (targetChannel == null) {
-                    targetChannel = (net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel) event.getChannel();
-                }
-
-                if (event.getMember() != null && !event.getMember().hasAccess(targetChannel)) {
-                    return "Error: Acceso denegado. El usuario no tiene permisos para este canal.";
-                }
-
-                long snowflakeId = (startInstant.toEpochMilli() - 1420070400000L) << 22;
-
-                // Mensaje temporal de progreso en Discord para retroalimentación en tiempo real
-                net.dv8tion.jda.api.entities.Message progressMsg = null;
-                try {
-                    progressMsg = targetChannel.sendMessage("🔍 *Viajando en el tiempo para contar los mensajes... Por favor espera.*").complete();
-                } catch (Exception ignored) {}
-
-                long count = 0;
-                boolean reachedSafetyLimit = false;
-                long lastUpdatedCount = 0;
-
-                for (net.dv8tion.jda.api.entities.Message msg : targetChannel.getIterableHistory()) {
-                    if (msg.getIdLong() <= snowflakeId) {
-                        break;
-                    }
-                    count++;
-
-                    // Actualizar el progreso cada 1000 mensajes contados
-                    if (count - lastUpdatedCount >= 1000) {
-                        lastUpdatedCount = count;
-                        if (progressMsg != null) {
-                            try {
-                                progressMsg.editMessage(String.format("🔍 *Viajando en el tiempo... Se han contado %d mensajes.*", count)).queue();
-                            } catch (Exception ignored) {}
-                        }
-                    }
-
-                    if (count >= 5000) {
-                        reachedSafetyLimit = true;
-                        break;
-                    }
-                }
-
-                // Eliminar el mensaje temporal de progreso una vez terminada la búsqueda
-                if (progressMsg != null) {
-                    try {
-                        progressMsg.delete().queue();
-                    } catch (Exception ignored) {}
-                }
-
-                if (reachedSafetyLimit) {
-                    return String.format("Se encontraron más de 5000 mensajes desde %s en el canal '%s'. Se recomienda usar un offset máximo de 5000.", startDateStr, targetChannel.getName());
-                } else {
-                    return String.format("Hay exactamente %d mensajes enviados desde %s hasta hoy en el canal '%s'. Puedes usar 'get_channel_history' con offset=%d para leer a partir de esa fecha.", count, startDateStr, targetChannel.getName(), count);
-                }
             }
         };
     }
