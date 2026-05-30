@@ -390,7 +390,7 @@ public class AIChatService {
                         try {
                             List<OpenAIDTO.ToolCall> tcs = objectMapper.readValue(dbMsg.getContent(), new TypeReference<List<OpenAIDTO.ToolCall>>() {});
                             builder.toolCalls(tcs);
-                            builder.content(null); // Clear content string if it was holding the tool calls list
+                            builder.content(""); // Clear content string to an empty string instead of null, keeping the key in JSON for Gemini/GLM-4 compatibility
                         } catch (Exception e) {
                             log.error("Error parsing tool calls list from DB", e);
                         }
