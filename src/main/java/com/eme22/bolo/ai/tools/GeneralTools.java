@@ -17,6 +17,7 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import com.eme22.bolo.utils.SearchUtils;
 
 @ApplicationScoped
 public class GeneralTools {
@@ -1223,6 +1224,73 @@ public class GeneralTools {
             }
         }
         return null;
+    }
+
+    @Produces
+    @ApplicationScoped
+    public AITool getInternetSearchTool() {
+        return new AITool() {
+            @Override
+            public String getName() {
+                return "internet_search";
+            }
+
+            @Override
+            public String getDescription() {
+                return "Busca información en internet para obtener datos en tiempo real sobre noticias, hechos recientes, personas, clima y eventos actuales.";
+            }
+
+            @Override
+            public OpenAIDTO.Tool getDefinition() {
+                Map<String, Object> props = new HashMap<>();
+
+                Map<String, Object> queryProp = new HashMap<>();
+                queryProp.put("type", "string");
+                queryProp.put("description", "El término o frase de búsqueda en internet.");
+                props.put("query", queryProp);
+
+                Map<String, Object> limitProp = new HashMap<>();
+                limitProp.put("type", "integer");
+                limitProp.put("description", "Límite máximo de resultados a retornar (por defecto 5, máximo 10).");
+                limitProp.put("minimum", 1);
+                limitProp.put("maximum", 10);
+                props.put("limit", limitProp);
+
+                return OpenAIDTO.Tool.builder()
+                        .type("function")
+                        .function(OpenAIDTO.FunctionDefinition.builder()
+                                .name(getName())
+                                .description(getDescription())
+                                .parameters(OpenAIDTO.ParametersDefinition.builder()
+                                        .type("object")
+                                        .properties(props)
+                                        .required(Collections.singletonList("query"))
+                                        .build())
+                                .build())
+                        .build();
+            }
+
+            @Override
+            public List<Permission> getRequiredUserPermissions() {
+                return Collections.emptyList();
+            }
+
+            @Override
+            public String execute(MessageReceivedEvent event, Map<String, Object> arguments) throws Exception {
+                String query = (String) arguments.get("query");
+                if (query == null || query.trim().isEmpty()) {
+                    return "Error: Falta el parámetro obligatorio 'query'.";
+                }
+
+                Number limitNum = (Number) arguments.get("limit");
+                int limit = limitNum != null ? limitNum.intValue() : 5;
+                if (limit < 1 || limit > 10) {
+                    limit = 5;
+                }
+
+                return SearchUtils.performSearch(query, limit);
+            }
+        };
     }
 }
 
