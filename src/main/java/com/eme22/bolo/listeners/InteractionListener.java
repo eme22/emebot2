@@ -227,6 +227,10 @@ public class InteractionListener implements EventListener {
                 .addOption(lang.getMessage("effect.underwater.label"), "effect_underwater", lang.getMessage("effect.underwater.desc"), Emoji.fromFormatted("🫧"))
                 .addOption(lang.getMessage("effect.demon.label"), "effect_demon", lang.getMessage("effect.demon.desc"), Emoji.fromFormatted("😈"))
                 .addOption(lang.getMessage("effect.radio.label"), "effect_radio", lang.getMessage("effect.radio.desc"), Emoji.fromFormatted("📻"))
+                .addOption(lang.getMessage("effect.telephone.label"), "effect_telephone", lang.getMessage("effect.telephone.desc"), Emoji.fromFormatted("📞"))
+                .addOption(lang.getMessage("effect.lofi.label"), "effect_lofi", lang.getMessage("effect.lofi.desc"), Emoji.fromFormatted("☕"))
+                .addOption(lang.getMessage("effect.cave.label"), "effect_cave", lang.getMessage("effect.cave.desc"), Emoji.fromFormatted("🦇"))
+                .addOption(lang.getMessage("effect.space.label"), "effect_space", lang.getMessage("effect.space.desc"), Emoji.fromFormatted("🌌"))
                 .build();
             event.reply(lang.getMessage("command.effects.menu.title")).setComponents(ActionRow.of(menu)).setEphemeral(true).queue();
             break;
