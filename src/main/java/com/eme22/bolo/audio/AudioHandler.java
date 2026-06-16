@@ -629,6 +629,56 @@ public class AudioHandler {
                   ));
                   builder.setDistortion(new Distortion(0.2f, 0.6f, 0.2f, 0.6f, 0.1f, 0.5f, 0.1f, 0.5f));
                   break;
+              case "effect_telephone":
+                  builder.setEqualizer(java.util.List.of(
+                      new Band(0, -0.3f),
+                      new Band(1, -0.3f),
+                      new Band(2, -0.3f),
+                      new Band(3, -0.3f),
+                      new Band(4, -0.3f),
+                      new Band(5, -0.2f),
+                      new Band(6, 0.35f),
+                      new Band(7, 0.35f),
+                      new Band(8, 0.35f),
+                      new Band(9, 0.35f),
+                      new Band(10, 0.2f),
+                      new Band(11, -0.2f),
+                      new Band(12, -0.3f),
+                      new Band(13, -0.3f),
+                      new Band(14, -0.3f)
+                  ));
+                  builder.setDistortion(new Distortion(0.3f, 0.7f, 0.3f, 0.7f, 0.1f, 0.5f, 0.1f, 0.5f));
+                  break;
+              case "effect_lofi":
+                  builder.setLowPass(new LowPass(15.0f));
+                  builder.setVibrato(new Vibrato(2.0f, 0.15f));
+                  builder.setEqualizer(java.util.List.of(
+                      new Band(0, 0.15f),
+                      new Band(1, 0.15f),
+                      new Band(2, 0.1f),
+                      new Band(3, 0.0f),
+                      new Band(4, -0.1f),
+                      new Band(5, -0.15f),
+                      new Band(6, -0.1f),
+                      new Band(7, 0.0f),
+                      new Band(8, 0.1f),
+                      new Band(9, 0.15f),
+                      new Band(10, 0.1f),
+                      new Band(11, -0.1f),
+                      new Band(12, -0.15f),
+                      new Band(13, -0.2f),
+                      new Band(14, -0.25f)
+                  ));
+                  break;
+              case "effect_cave":
+                  builder.setTremolo(new Tremolo(4.0f, 0.4f));
+                  builder.setVibrato(new Vibrato(2.5f, 0.2f));
+                  builder.setDistortion(new Distortion(0.2f, 0.5f, 0.2f, 0.5f, 0.1f, 0.3f, 0.1f, 0.3f));
+                  break;
+              case "effect_space":
+                  builder.setRotation(new Rotation(0.3f));
+                  builder.setVibrato(new Vibrato(8.0f, 0.3f));
+                  break;
               case "effect_none":
               default:
                   break;
