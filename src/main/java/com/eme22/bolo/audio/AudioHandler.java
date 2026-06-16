@@ -592,7 +592,7 @@ public class AudioHandler {
                   builder.setDistortion(new Distortion(0.5f, 1.0f, 0.5f, 1.0f, 0.5f, 1.0f, 0.5f, 1.0f));
                   break;
               case "effect_chipmunk":
-                  builder.setTimescale(new Timescale(1.15f, 1.50f, 1.0f));
+                  builder.setTimescale(new Timescale(1.15f, 1.75f, 1.0f));
                   break;
               case "effect_alien":
                   builder.setVibrato(new Vibrato(14.0f, 0.75f));
@@ -606,7 +606,7 @@ public class AudioHandler {
                   builder.setLowPass(new LowPass(30.0f));
                   break;
               case "effect_demon":
-                  builder.setTimescale(new Timescale(0.80f, 0.60f, 1.0f));
+                  builder.setTimescale(new Timescale(1.0f, 0.70f, 1.0f));
                   builder.setDistortion(new Distortion(0.3f, 0.7f, 0.3f, 0.7f, 0.15f, 0.5f, 0.15f, 0.5f));
                   break;
               case "effect_radio":
