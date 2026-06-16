@@ -430,8 +430,9 @@ public class AIChatService {
 
                 for (AIConfig candidate : candidateConfigs) {
                     long candidateStartTime = System.currentTimeMillis();
+                    String candidateApiKey = candidate.getApiKey();
+                    OpenAIClient client = null;
                     try {
-                        String candidateApiKey = candidate.getApiKey();
                         String candidateBaseUrl = candidate.getBaseUrl();
                         String candidateModel = candidate.getModel();
                         int candidateTimeout = candidate.getTimeoutSeconds();
@@ -453,7 +454,7 @@ public class AIChatService {
                         request.setModel(candidateModel);
 
                         // 8. Construct REST Client dynamically
-                        OpenAIClient client = io.quarkus.rest.client.reactive.QuarkusRestClientBuilder.newBuilder()
+                        client = io.quarkus.rest.client.reactive.QuarkusRestClientBuilder.newBuilder()
                                 .baseUri(URI.create(baseUrl))
                                 .connectTimeout(5, java.util.concurrent.TimeUnit.SECONDS)
                                 .readTimeout(candidateTimeout, java.util.concurrent.TimeUnit.SECONDS)
@@ -471,16 +472,43 @@ public class AIChatService {
                             pinnedConfig = candidate;
                             this.lastSuccessfulConfigIndex = candidate.getIndex();
                             log.info("[AI Chat] Proveedor #{} [URL: {}, Modelo: {}] completado con éxito en {} ms.", 
-                                    candidate.getIndex(), candidate.getBaseUrl(), candidate.getModel(), (System.currentTimeMillis() - candidateStartTime));
+                                     candidate.getIndex(), candidate.getBaseUrl(), candidate.getModel(), (System.currentTimeMillis() - candidateStartTime));
                             break;
                         }
                     } catch (Exception e) {
                         lastException = e;
                         String failReason = e.getMessage() != null ? e.getMessage() : e.toString();
-                        log.warn("[AI Chat] Proveedor #{} [URL: {}, Modelo: {}] falló en iteración {}. Razón: {}", 
-                                candidate.getIndex(), candidate.getBaseUrl(), candidate.getModel(), iteration, failReason);
-                        attemptLogs.add(String.format("Proveedor #%d [URL: %s, Modelo: %s] falló tras %d ms. Razón: %s", 
-                                candidate.getIndex(), candidate.getBaseUrl(), candidate.getModel(), (System.currentTimeMillis() - candidateStartTime), failReason));
+                        boolean retried = false;
+
+                        if (isBadRequestDueToTools(e, request) && client != null) {
+                            log.info("[AI Chat] Proveedor #{} [URL: {}, Modelo: {}] falló con 400. Reintentando sin herramientas...", 
+                                    candidate.getIndex(), candidate.getBaseUrl(), candidate.getModel());
+                            try {
+                                OpenAIDTO.ChatCompletionRequest cleanRequest = cloneRequestWithoutTools(request);
+                                response = client.chatCompletion("Bearer " + candidateApiKey, cleanRequest);
+                                if (response != null && response.getChoices() != null && !response.getChoices().isEmpty()) {
+                                    successfulConfig = candidate;
+                                    pinnedConfig = candidate;
+                                    this.lastSuccessfulConfigIndex = candidate.getIndex();
+                                    log.info("[AI Chat] Proveedor #{} [URL: {}, Modelo: {}] completado con éxito sin herramientas en {} ms.", 
+                                            candidate.getIndex(), candidate.getBaseUrl(), candidate.getModel(), (System.currentTimeMillis() - candidateStartTime));
+                                    retried = true;
+                                    break;
+                                }
+                            } catch (Exception retryEx) {
+                                lastException = retryEx;
+                                failReason = retryEx.getMessage() != null ? retryEx.getMessage() : retryEx.toString();
+                                log.warn("[AI Chat] Proveedor #{} [URL: {}, Modelo: {}] falló en reintento sin herramientas. Razón: {}", 
+                                        candidate.getIndex(), candidate.getBaseUrl(), candidate.getModel(), failReason);
+                            }
+                        }
+
+                        if (!retried) {
+                            log.warn("[AI Chat] Proveedor #{} [URL: {}, Modelo: {}] falló en iteración {}. Razón: {}", 
+                                    candidate.getIndex(), candidate.getBaseUrl(), candidate.getModel(), iteration, failReason);
+                            attemptLogs.add(String.format("Proveedor #%d [URL: %s, Modelo: %s] falló tras %d ms. Razón: %s", 
+                                    candidate.getIndex(), candidate.getBaseUrl(), candidate.getModel(), (System.currentTimeMillis() - candidateStartTime), failReason));
+                        }
                     }
                 }
 
@@ -665,6 +693,68 @@ public class AIChatService {
             msg.setDiscordMessageId(discordMessageId);
             messageRepository.persist(msg);
         }
+    }
+
+    private boolean isBadRequestDueToTools(Exception e, OpenAIDTO.ChatCompletionRequest request) {
+        boolean is400 = false;
+        if (e instanceof jakarta.ws.rs.WebApplicationException wae) {
+            if (wae.getResponse() != null && wae.getResponse().getStatus() == 400) {
+                is400 = true;
+            }
+        } else {
+            String msg = e.getMessage() != null ? e.getMessage().toLowerCase() : "";
+            if (msg.contains("400") || msg.contains("bad request")) {
+                is400 = true;
+            }
+        }
+
+        if (!is400) {
+            return false;
+        }
+
+        if (request == null) {
+            return false;
+        }
+
+        if (request.getTools() != null && !request.getTools().isEmpty()) {
+            return true;
+        }
+
+        if (request.getMessages() != null) {
+            for (OpenAIDTO.Message msg : request.getMessages()) {
+                if ("tool".equals(msg.getRole()) || (msg.getToolCalls() != null && !msg.getToolCalls().isEmpty())) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private OpenAIDTO.ChatCompletionRequest cloneRequestWithoutTools(OpenAIDTO.ChatCompletionRequest original) {
+        List<OpenAIDTO.Message> cleanMessages = new ArrayList<>();
+        if (original.getMessages() != null) {
+            for (OpenAIDTO.Message msg : original.getMessages()) {
+                if ("tool".equals(msg.getRole())) {
+                    continue;
+                }
+                if ("assistant".equals(msg.getRole()) && msg.getToolCalls() != null && !msg.getToolCalls().isEmpty()) {
+                    OpenAIDTO.Message cleanMsg = OpenAIDTO.Message.builder()
+                            .role(msg.getRole())
+                            .content(msg.getContent() != null && !msg.getContent().isEmpty() ? msg.getContent() : "Procesando solicitud...")
+                            .build();
+                    cleanMessages.add(cleanMsg);
+                } else {
+                    cleanMessages.add(msg);
+                }
+            }
+        }
+
+        return OpenAIDTO.ChatCompletionRequest.builder()
+                .model(original.getModel())
+                .messages(cleanMessages)
+                .temperature(original.getTemperature())
+                .build();
     }
 
     public String getFriendlyErrorMessage(Throwable t) {
