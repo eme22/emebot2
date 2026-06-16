@@ -221,6 +221,12 @@ public class InteractionListener implements EventListener {
                 .addOption(lang.getMessage("effect.vaporwave.label"), "effect_vaporwave", lang.getMessage("effect.vaporwave.desc"), Emoji.fromFormatted("🌊"))
                 .addOption(lang.getMessage("effect.karaoke.label"), "effect_karaoke", lang.getMessage("effect.karaoke.desc"), Emoji.fromFormatted("🎤"))
                 .addOption(lang.getMessage("effect.distortion.label"), "effect_distortion", lang.getMessage("effect.distortion.desc"), Emoji.fromFormatted("🔊"))
+                .addOption(lang.getMessage("effect.chipmunk.label"), "effect_chipmunk", lang.getMessage("effect.chipmunk.desc"), Emoji.fromFormatted("🐿️"))
+                .addOption(lang.getMessage("effect.alien.label"), "effect_alien", lang.getMessage("effect.alien.desc"), Emoji.fromFormatted("👽"))
+                .addOption(lang.getMessage("effect.8d.label"), "effect_8d", lang.getMessage("effect.8d.desc"), Emoji.fromFormatted("🎧"))
+                .addOption(lang.getMessage("effect.underwater.label"), "effect_underwater", lang.getMessage("effect.underwater.desc"), Emoji.fromFormatted("🫧"))
+                .addOption(lang.getMessage("effect.demon.label"), "effect_demon", lang.getMessage("effect.demon.desc"), Emoji.fromFormatted("😈"))
+                .addOption(lang.getMessage("effect.radio.label"), "effect_radio", lang.getMessage("effect.radio.desc"), Emoji.fromFormatted("📻"))
                 .build();
             event.reply(lang.getMessage("command.effects.menu.title")).setComponents(ActionRow.of(menu)).setEphemeral(true).queue();
             break;

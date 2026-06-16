@@ -22,6 +22,10 @@ import dev.arbjerg.lavalink.protocol.v4.Timescale;
 import dev.arbjerg.lavalink.protocol.v4.Karaoke;
 import dev.arbjerg.lavalink.protocol.v4.Distortion;
 import dev.arbjerg.lavalink.protocol.v4.Band;
+import dev.arbjerg.lavalink.protocol.v4.Rotation;
+import dev.arbjerg.lavalink.protocol.v4.Tremolo;
+import dev.arbjerg.lavalink.protocol.v4.Vibrato;
+import dev.arbjerg.lavalink.protocol.v4.LowPass;
 import java.io.IOException;
 import java.lang.Exception;
 import java.time.Duration;
@@ -586,6 +590,44 @@ public class AudioHandler {
                   break;
               case "effect_distortion":
                   builder.setDistortion(new Distortion(0.5f, 1.0f, 0.5f, 1.0f, 0.5f, 1.0f, 0.5f, 1.0f));
+                  break;
+              case "effect_chipmunk":
+                  builder.setTimescale(new Timescale(1.15f, 1.50f, 1.0f));
+                  break;
+              case "effect_alien":
+                  builder.setVibrato(new Vibrato(14.0f, 0.75f));
+                  builder.setTremolo(new Tremolo(10.0f, 0.5f));
+                  builder.setDistortion(new Distortion(0.3f, 0.8f, 0.3f, 0.8f, 0.1f, 0.7f, 0.1f, 0.7f));
+                  break;
+              case "effect_8d":
+                  builder.setRotation(new Rotation(0.15f));
+                  break;
+              case "effect_underwater":
+                  builder.setLowPass(new LowPass(30.0f));
+                  break;
+              case "effect_demon":
+                  builder.setTimescale(new Timescale(0.80f, 0.60f, 1.0f));
+                  builder.setDistortion(new Distortion(0.3f, 0.7f, 0.3f, 0.7f, 0.15f, 0.5f, 0.15f, 0.5f));
+                  break;
+              case "effect_radio":
+                  builder.setEqualizer(java.util.List.of(
+                      new Band(0, -0.25f),
+                      new Band(1, -0.25f),
+                      new Band(2, -0.25f),
+                      new Band(3, -0.25f),
+                      new Band(4, -0.1f),
+                      new Band(5, 0.1f),
+                      new Band(6, 0.25f),
+                      new Band(7, 0.3f),
+                      new Band(8, 0.3f),
+                      new Band(9, 0.3f),
+                      new Band(10, 0.1f),
+                      new Band(11, -0.1f),
+                      new Band(12, -0.25f),
+                      new Band(13, -0.25f),
+                      new Band(14, -0.25f)
+                  ));
+                  builder.setDistortion(new Distortion(0.2f, 0.6f, 0.2f, 0.6f, 0.1f, 0.5f, 0.1f, 0.5f));
                   break;
               case "effect_none":
               default:
