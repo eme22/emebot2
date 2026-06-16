@@ -55,5 +55,3 @@ node_modules_tmp
 web-panel
 .agents
 graphify-out
-deploy.ps1
-deploy.sh
