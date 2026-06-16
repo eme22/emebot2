@@ -23,4 +23,16 @@ public class UserMemoryRepository implements PanacheRepository<UserMemory> {
     public void saveMemory2(UserMemory memory) {
         persist(memory);
     }
+
+    @Transactional
+    public void saveMemoryWithLimit(UserMemory memory, int maxLimit) {
+        List<UserMemory> existing = findActiveMemoriesForUser(memory.getGuildId(), memory.getTargetUserId());
+        if (existing.size() >= maxLimit) {
+            int toDeleteCount = existing.size() - maxLimit + 1;
+            for (int i = 0; i < toDeleteCount; i++) {
+                deleteMemory(existing.get(i).getId());
+            }
+        }
+        persist(memory);
+    }
 }

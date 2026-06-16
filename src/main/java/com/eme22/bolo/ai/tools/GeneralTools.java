@@ -1292,5 +1292,81 @@ public class GeneralTools {
             }
         };
     }
+
+    @Produces
+    @ApplicationScoped
+    public AITool getRememberUserNoteTool() {
+        return new AITool() {
+            @Override
+            public String getName() {
+                return "remember_user_note";
+            }
+
+            @Override
+            public String getDescription() {
+                return "Guarda una nota, apodo, sobrenombre o dato importante sobre un usuario para recordarlo en futuras conversaciones. " +
+                       "Úsalo cuando el usuario te diga cómo le gusta que le llamen, su sobrenombre, o algún chisme/detalle relevante sobre él.";
+            }
+
+            @Override
+            public OpenAIDTO.Tool getDefinition() {
+                Map<String, Object> props = new HashMap<>();
+
+                Map<String, Object> targetUserIdProp = new HashMap<>();
+                targetUserIdProp.put("type", "string");
+                targetUserIdProp.put("description", "El ID de Discord del usuario sobre el cual se guarda la nota o apodo.");
+                props.put("targetUserId", targetUserIdProp);
+
+                Map<String, Object> noteTextProp = new HashMap<>();
+                noteTextProp.put("type", "string");
+                noteTextProp.put("description", "El texto de la nota o apodo a recordar (ej: 'Le gusta que le llamen Pepe' o 'Es de Perú').");
+                props.put("noteText", noteTextProp);
+
+                return OpenAIDTO.Tool.builder()
+                        .type("function")
+                        .function(OpenAIDTO.FunctionDefinition.builder()
+                                .name(getName())
+                                .description(getDescription())
+                                .parameters(OpenAIDTO.ParametersDefinition.builder()
+                                        .type("object")
+                                        .properties(props)
+                                        .required(Arrays.asList("targetUserId", "noteText"))
+                                        .build())
+                                .build())
+                        .build();
+            }
+
+            @Override
+            public List<Permission> getRequiredUserPermissions() {
+                return Collections.emptyList();
+            }
+
+            @Override
+            public String execute(MessageReceivedEvent event, Map<String, Object> arguments) throws Exception {
+                String targetUserIdStr = (String) arguments.get("targetUserId");
+                String noteText = (String) arguments.get("noteText");
+
+                if (targetUserIdStr == null || noteText == null || noteText.trim().isEmpty()) {
+                    return "Error: Faltan argumentos requeridos.";
+                }
+
+                Long targetUserId = Long.parseLong(targetUserIdStr.replaceAll("\\D", ""));
+                Long guildId = event.getGuild().getIdLong();
+                Long createdByUserId = event.getAuthor().getIdLong();
+
+                com.eme22.bolo.model.UserMemory memory = com.eme22.bolo.model.UserMemory.builder()
+                        .guildId(guildId)
+                        .targetUserId(targetUserId)
+                        .memoryText(noteText.trim())
+                        .createdByUserId(createdByUserId)
+                        .createdAt(java.time.Instant.now())
+                        .build();
+
+                userMemoryRepository.saveMemoryWithLimit(memory, 20);
+
+                return String.format("Dato guardado con éxito en mi memoria a largo plazo sobre el usuario: \"%s\".", noteText);
+            }
+        };
+    }
 }
 
