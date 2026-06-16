@@ -1,5 +1,6 @@
 package com.eme22.bolo.utils;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -43,7 +44,7 @@ public class SearchUtils {
     }
 
     /**
-     * Performs a web search using Google with fallback to DuckDuckGo if Google is blocked or fails.
+     * Performs a web search using SearXNG with fallback to DuckDuckGo.
      *
      * @param query The search term.
      * @param limit The maximum number of results to return.
@@ -52,21 +53,21 @@ public class SearchUtils {
     public static String performSearch(String query, int limit) {
         log.info("Iniciando búsqueda web para: '{}' (límite: {})", query, limit);
         List<SearchResult> results = new ArrayList<>();
-        String engineUsed = "Google";
+        String engineUsed = "SearXNG";
 
         try {
-            results = scrapeGoogle(query, limit);
+            results = scrapeSearxng(query, limit);
             if (results.isEmpty()) {
-                throw new IOException("Google no devolvió ningún resultado div.g (posible CAPTCHA o bloqueo).");
+                throw new IOException("SearXNG no devolvió resultados.");
             }
         } catch (Exception e) {
-            log.warn("La búsqueda en Google falló ({}). Intentando fallback con DuckDuckGo...", e.getMessage());
+            log.warn("La búsqueda en SearXNG falló ({}). Intentando fallback con DuckDuckGo...", e.getMessage());
             engineUsed = "DuckDuckGo";
             try {
                 results = scrapeDuckDuckGo(query, limit);
             } catch (Exception ex) {
                 log.error("La búsqueda de fallback en DuckDuckGo también falló.", ex);
-                return "❌ No se pudo completar la búsqueda en internet. Ambos motores de búsqueda (Google y DuckDuckGo) fallaron o bloquearon la solicitud.";
+                return "❌ No se pudo completar la búsqueda en internet. Ambos motores de búsqueda (SearXNG y DuckDuckGo) fallaron o bloquearon la solicitud.";
             }
         }
 
@@ -82,32 +83,39 @@ public class SearchUtils {
         return sb.toString().trim();
     }
 
-    private static List<SearchResult> scrapeGoogle(String query, int limit) throws IOException {
-        String url = "https://www.google.com/search?q=" + URLEncoder.encode(query, StandardCharsets.UTF_8);
-        Document doc = Jsoup.connect(url)
+    static List<SearchResult> scrapeSearxng(String query, int limit) throws IOException {
+        String baseUrl = ConfigProvider.getConfig()
+                .getOptionalValue("searxng.url", String.class)
+                .orElse("https://search.ononoki.org");
+
+        if (baseUrl.endsWith("/")) {
+            baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
+        }
+
+        String url = baseUrl + "/search?q=" + URLEncoder.encode(query, StandardCharsets.UTF_8) + "&format=json";
+
+        String json = Jsoup.connect(url)
                 .userAgent(USER_AGENT)
                 .timeout(TIMEOUT_MS)
-                .get();
+                .ignoreContentType(true)
+                .execute()
+                .body();
 
-        Elements elements = doc.select("div.g");
         List<SearchResult> list = new ArrayList<>();
 
-        for (Element el : elements) {
-            if (list.size() >= limit) {
-                break;
-            }
+        com.google.gson.JsonObject jsonObject = com.google.gson.JsonParser.parseString(json).getAsJsonObject();
+        if (jsonObject.has("results")) {
+            com.google.gson.JsonArray resultsArray = jsonObject.getAsJsonArray("results");
+            for (com.google.gson.JsonElement el : resultsArray) {
+                if (list.size() >= limit) {
+                    break;
+                }
+                com.google.gson.JsonObject resultObj = el.getAsJsonObject();
+                String title = resultObj.has("title") ? resultObj.get("title").getAsString() : "";
+                String href = resultObj.has("url") ? resultObj.get("url").getAsString() : "";
+                String snippet = resultObj.has("content") ? resultObj.get("content").getAsString() : "";
 
-            Element titleEl = el.selectFirst("h3");
-            Element linkEl = el.selectFirst("a[href]");
-            Element snippetEl = el.selectFirst(".VwiC3b, .yDYNvb, .MUxGfe, .lEBKkf");
-
-            if (titleEl != null && linkEl != null) {
-                String title = titleEl.text();
-                String href = linkEl.attr("abs:href");
-                String snippet = snippetEl != null ? snippetEl.text() : "";
-
-                // Skip google specific/internal links
-                if (href.startsWith("http") && !href.contains("google.com/")) {
+                if (!title.isEmpty() && href.startsWith("http")) {
                     list.add(new SearchResult(title, href, snippet));
                 }
             }
@@ -116,7 +124,7 @@ public class SearchUtils {
         return list;
     }
 
-    private static List<SearchResult> scrapeDuckDuckGo(String query, int limit) throws IOException {
+    static List<SearchResult> scrapeDuckDuckGo(String query, int limit) throws IOException {
         String url = "https://html.duckduckgo.com/html/?q=" + URLEncoder.encode(query, StandardCharsets.UTF_8);
         Document doc = Jsoup.connect(url)
                 .userAgent(USER_AGENT)
