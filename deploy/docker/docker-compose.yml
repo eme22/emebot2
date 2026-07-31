@@ -2,12 +2,12 @@ services:
   emebot-jvm:
     image: emebot:jvm
     build:
-      context: .
-      dockerfile: src/main/docker/Dockerfile.jvm
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.jvm
     ports:
       - "8080:8080"
     volumes:
-      - ./prod-config:/deployments/config
+      - ../../prod-config:/deployments/config
     environment:
       - QUARKUS_PROFILE=dev
       - JAVA_OPTS=-Dquarkus.config.locations=/deployments/config/application.yml
@@ -16,12 +16,12 @@ services:
   emebot-native:
     image: emebot:native
     build:
-      context: .
-      dockerfile: src/main/docker/Dockerfile.native
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.native
     ports:
       - "8081:8080"
     volumes:
-      - ./prod-config:/work/config
+      - ../../prod-config:/work/config
     environment:
       - QUARKUS_PROFILE=dev
       - QUARKUS_CONFIG_LOCATIONS=/work/config/application.yml

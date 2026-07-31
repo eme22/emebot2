@@ -2,7 +2,7 @@
 $ErrorActionPreference = "Stop"
 
 Write-Host "=== 1. Iniciando compilación de Docker ===" -ForegroundColor Cyan
-docker build -f src/main/docker/Dockerfile.prod -t emebot:prod .
+docker build -f deploy/docker/Dockerfile.prod -t emebot:prod .
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Error: La compilación de Docker falló." -ForegroundColor Red
