@@ -1,0 +1,3 @@
+[submodule "web-panel"]
+	path = web-panel
+	url = https://github.com/eme22/embot-web-panel.git

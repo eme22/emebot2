@@ -117,7 +117,7 @@ public class EmptyChannelCmd extends AdminCommand {
       return;
     }
 
-    voiceChannel.getMembers().forEach(m -> event.getGuild().kickVoiceChannel(m).queue());
+    voiceChannel.getMembers().forEach(m -> event.getGuild().moveVoiceMember(m, null).queue());
 
     event.reply("https://tenor.com/es-419/view/troll-dancing-dance-gif-7693210").queue();
   }
@@ -158,7 +158,7 @@ public class EmptyChannelCmd extends AdminCommand {
       return;
     }
 
-    targetChannel.getMembers().forEach(m -> event.getGuild().kickVoiceChannel(m).queue());
+    targetChannel.getMembers().forEach(m -> event.getGuild().moveVoiceMember(m, null).queue());
     event.reply("https://tenor.com/es-419/view/troll-dancing-dance-gif-7693210");
   }
 }
