@@ -157,8 +157,8 @@ openai:
 lavalink:
   servers:
     - name: Node1
-      host: 192.168.18.164
-      port: 2333
+      host: ${LAVALINK_HOST:192.168.18.164}
+      port: ${LAVALINK_PORT:2333}
       password: ${LAVALINK_PASSWORD}
       region: peru
       secure: false
@@ -170,8 +170,8 @@ lavalink:
   lavalink:
     servers:
       - name: DevNode
-        host: 10.241.251.82
-        port: 2333
+        host: ${LAVALINK_HOST:10.241.251.82}
+        port: ${LAVALINK_PORT:2333}
         password: ${LAVALINK_PASSWORD}
         region: peru
         secure: false
@@ -179,10 +179,10 @@ lavalink:
   quarkus:
     datasource:
       db-kind: mariadb
-      username: u15_qmC7fYGOKC
+      username: ${DB_USER:u15_qmC7fYGOKC}
       password: ${DB_PASSWORD}
       jdbc:
-        url: jdbc:mariadb://10.241.251.82:3306/s15_mbot
+        url: ${DB_URL:jdbc:mariadb://10.241.251.82:3306/s15_mbot}
     hibernate-orm:
       database:
         generation: update
@@ -192,10 +192,10 @@ lavalink:
   quarkus:
     datasource:
       db-kind: mariadb
-      username: u15_qmC7fYGOKC
+      username: ${DB_USER:u15_qmC7fYGOKC}
       password: ${DB_PASSWORD}
       jdbc:
-        url: jdbc:mariadb://192.168.18.164:3306/s15_mbot
+        url: ${DB_URL:jdbc:mariadb://192.168.18.164:3306/s15_mbot}
     hibernate-orm:
       database:
         generation: update
@@ -203,8 +203,8 @@ lavalink:
   lavalink:
     servers:
       - name: ProdNode
-        host: 192.168.18.164
-        port: 2333
+        host: ${LAVALINK_HOST:192.168.18.164}
+        port: ${LAVALINK_PORT:2333}
         password: ${LAVALINK_PASSWORD}
         region: peru
         secure: false

@@ -1,0 +1,65 @@
+name: embot-dev-native
+
+services:
+  mariadb:
+    image: mariadb:11
+    container_name: embot-mariadb-dev-native
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root_password}
+      MYSQL_DATABASE: ${DB_NAME:-s15_mbot}
+      MYSQL_USER: ${DB_USER:-embot_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-embot_password}
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    volumes:
+      - mariadb_dev_native_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck-sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  lavalink:
+    image: ghcr.io/lavalink-devs/lavalink:4
+    container_name: embot-lavalink-dev-native
+    environment:
+      LAVALINK_SERVER_PASSWORD: ${LAVALINK_PASSWORD:-youshallnotpass}
+    ports:
+      - "${LAVALINK_PORT:-2333}:2333"
+    restart: unless-stopped
+
+  embot:
+    image: embot:dev-native
+    container_name: embot-dev-native
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.native
+    ports:
+      - "${SERVER_PORT:-8080}:8080"
+    environment:
+      - QUARKUS_PROFILE=dev
+      - DISCORD_TOKEN=${DISCORD_TOKEN}
+      - CLIENT_TOKEN=${CLIENT_TOKEN}
+      - JWT_SECRET=${JWT_SECRET:-super-secret-key-that-should-be-changed-12345678}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - WEB_ADMIN_USERNAME=${WEB_ADMIN_USERNAME:-admin}
+      - WEB_ADMIN_PASSWORD=${WEB_ADMIN_PASSWORD:-password}
+      - DB_HOST=mariadb
+      - DB_PORT=3306
+      - DB_NAME=${DB_NAME:-s15_mbot}
+      - DB_USER=${DB_USER:-embot_user}
+      - DB_PASSWORD=${DB_PASSWORD:-embot_password}
+      - DB_URL=jdbc:mariadb://mariadb:3306/${DB_NAME:-s15_mbot}
+      - LAVALINK_HOST=lavalink
+      - LAVALINK_PORT=2333
+      - LAVALINK_PASSWORD=${LAVALINK_PASSWORD:-youshallnotpass}
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      lavalink:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  mariadb_dev_native_data:
