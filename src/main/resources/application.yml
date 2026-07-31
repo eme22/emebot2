@@ -10,7 +10,7 @@ quarkus:
       ~: true
   quinoa:
     ui-dir: "web-panel"
-    build-dir: "dist/web-panel/browser"
+    build-dir: "../dist/web-panel/browser"
     package-manager: pnpm
     enable-spa-routing: true
 

@@ -48,6 +48,7 @@ Thumbs.db
 /.github/
 
 .quinoa
+dist/
 
 node_modules
 node_modules_tmp
