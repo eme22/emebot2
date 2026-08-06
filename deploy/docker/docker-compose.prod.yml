@@ -25,6 +25,7 @@ services:
     container_name: embot-lavalink-prod
     environment:
       LAVALINK_SERVER_PASSWORD: ${LAVALINK_PASSWORD:?LAVALINK_PASSWORD is required}
+      SERVER_PORT: ${LAVALINK_PORT:-2333}
     ports:
       - "${LAVALINK_PORT:-2333}:2333"
     restart: always

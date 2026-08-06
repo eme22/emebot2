@@ -28,6 +28,11 @@ mp:
   shardId: ${JDA_SHARD_ID:0}
   totalShards: ${JDA_TOTAL_SHARDS:1}
 
+jda:
+  token: ${DISCORD_TOKEN}
+  shardId: ${JDA_SHARD_ID:0}
+  totalShards: ${JDA_TOTAL_SHARDS:1}
+
 config:
   prefix: "@mention"
   altprefix: "NONE"
@@ -55,6 +60,9 @@ config:
   clientToken: ${CLIENT_TOKEN}
   aliases:
     sendmessageas: [ "sendmessageasuser" ]
+    serverconfig: [ "configuracionservidor", "configserver" ]
+    emptychannel: [ "vaciarcanal", "clearall" ]
+    allserverconfig: [ "configtodosservidores" ]
     settingTEST: [ "status" ]
     lyrics: [ "l" ]
     nowplaying: [ "np", "current" ]
