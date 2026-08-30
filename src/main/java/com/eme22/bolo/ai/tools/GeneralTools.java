@@ -35,6 +35,9 @@ public class GeneralTools {
     AIChatMessageRepository messageRepository;
 
     @Inject
+    com.eme22.bolo.repository.AIChatSessionSummaryRepository sessionSummaryRepository;
+
+    @Inject
     UserOffenseService userOffenseService;
 
     @Inject
@@ -352,6 +355,7 @@ public class GeneralTools {
                 String activeSession = sessionManager.getOrCreateSession(guildId, channelId, userId);
                 sessionManager.forceReset(guildId, channelId, userId);
                 messageRepository.deleteSession(activeSession);
+                sessionSummaryRepository.deleteBySessionId(activeSession);
 
                 UserOffense offense = userOffenseService.addOffense(userId);
 

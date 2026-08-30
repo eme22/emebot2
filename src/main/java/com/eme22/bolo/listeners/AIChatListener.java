@@ -2,9 +2,12 @@ package com.eme22.bolo.listeners;
 
 import com.eme22.bolo.Bot;
 import com.eme22.bolo.ai.AIChatService;
+import com.eme22.bolo.ai.AIChatRateLimiter;
 import com.eme22.bolo.model.Server;
 import com.eme22.bolo.services.UserOffenseService;
 import com.eme22.bolo.model.UserOffense;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.inject.Inject;
@@ -14,9 +17,16 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.EventListener;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+
 @ApplicationScoped
 @Slf4j
 public class AIChatListener implements EventListener {
+
+    private static final long TYPING_INTERVAL_SECONDS = 8;
 
     @Inject
     Bot bot;
@@ -25,7 +35,28 @@ public class AIChatListener implements EventListener {
     AIChatService chatService;
 
     @Inject
+    AIChatRateLimiter rateLimiter;
+
+    @Inject
     UserOffenseService offenseService;
+
+    private ScheduledExecutorService typingScheduler;
+
+    @PostConstruct
+    void initScheduler() {
+        typingScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "ai-typing-indicator");
+            t.setDaemon(true);
+            return t;
+        });
+    }
+
+    @PreDestroy
+    void shutdownScheduler() {
+        if (typingScheduler != null) {
+            typingScheduler.shutdownNow();
+        }
+    }
 
     @Override
     public void onEvent(@NotNull GenericEvent event) {
@@ -95,13 +126,34 @@ public class AIChatListener implements EventListener {
                 return;
             }
 
+            // Rate limiting: cooldown por usuario para proteger la cuota de proveedores
+            long requestUserId = event.getAuthor().getIdLong();
+            if (rateLimiter.isUserInCooldown(requestUserId)) {
+                log.debug("[AI Listener] Mensaje de usuario {} ignorado por cooldown anti-spam.", requestUserId);
+                return;
+            }
+
+            // Límite de solicitudes concurrentes por canal
+            long requestChannelId = event.getChannel().getIdLong();
+            if (!rateLimiter.tryAcquireChannel(requestChannelId)) {
+                event.getMessage().reply("⏳ Estoy procesando otra consulta en este canal. Espera un momento y vuelve a intentarlo.").queue();
+                return;
+            }
+
             log.info("[AI Listener] Mensaje de chat recibido de usuario '{}' (ID={}) en canal '{}' (ID={}) del servidor '{}'", 
                      event.getAuthor().getName(), event.getAuthor().getIdLong(), 
                      event.getChannel().getName(), event.getChannel().getIdLong(), 
                      event.getGuild().getName());
 
-            // Send typing indicator to channel
-            event.getChannel().sendTyping().queue();
+            // Indicador de escritura recurrente (el estado 'typing' de Discord dura ~10s y los loops de herramientas pueden tardar más)
+            ScheduledFuture<?> typingTask = typingScheduler.scheduleAtFixedRate(
+                    () -> {
+                        try {
+                            event.getChannel().sendTyping().queue();
+                        } catch (Exception ignored) {
+                        }
+                    },
+                    0, TYPING_INTERVAL_SECONDS, TimeUnit.SECONDS);
 
             // Execute asynchronously using the bot's thread pool to not block JDA thread
             bot.getThreadpool().submit(() -> {
@@ -160,6 +212,9 @@ public class AIChatListener implements EventListener {
                     long duration = System.currentTimeMillis() - listenerStartTime;
                     log.error("[AI Listener] Error procesando respuesta de IA de manera asíncrona tras {} ms", duration, e);
                     event.getMessage().reply(chatService.getFriendlyErrorMessage(e)).queue();
+                } finally {
+                    typingTask.cancel(false);
+                    rateLimiter.releaseChannel(requestChannelId);
                 }
             });
         }

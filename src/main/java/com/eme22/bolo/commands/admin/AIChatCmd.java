@@ -30,21 +30,23 @@ public class AIChatCmd extends AdminCommand {
     private final Bot bot;
     private final AIChatSessionManager sessionManager;
     private final AIChatMessageRepository messageRepository;
+    private final com.eme22.bolo.repository.AIChatSessionSummaryRepository sessionSummaryRepository;
     private final AIChatService aiChatService;
 
     @Inject
-    public AIChatCmd(Bot bot, AIChatSessionManager sessionManager, AIChatMessageRepository messageRepository, AIChatService aiChatService, @Named("adminCategory") Category category) {
+    public AIChatCmd(Bot bot, AIChatSessionManager sessionManager, AIChatMessageRepository messageRepository, com.eme22.bolo.repository.AIChatSessionSummaryRepository sessionSummaryRepository, AIChatService aiChatService, @Named("adminCategory") Category category) {
         super(category);
         this.bot = bot;
         this.sessionManager = sessionManager;
         this.messageRepository = messageRepository;
+        this.sessionSummaryRepository = sessionSummaryRepository;
         this.aiChatService = aiChatService;
         this.name = "ai";
         this.help = "Configura y administra el chatbot de IA del servidor";
         this.children = new AdminCommand[] {
             new EnableCmd(bot, category),
             new DisableCmd(bot, category),
-            new ResetCmd(bot, sessionManager, messageRepository, category),
+            new ResetCmd(bot, sessionManager, messageRepository, sessionSummaryRepository, category),
             new StatusCmd(bot, aiChatService, category),
             new ChannelCmd(bot, category),
             new SetupCmd(bot, aiChatService, category),
@@ -164,12 +166,14 @@ public class AIChatCmd extends AdminCommand {
         private final Bot bot;
         private final AIChatSessionManager sessionManager;
         private final AIChatMessageRepository messageRepository;
+        private final com.eme22.bolo.repository.AIChatSessionSummaryRepository sessionSummaryRepository;
 
-        public ResetCmd(Bot bot, AIChatSessionManager sessionManager, AIChatMessageRepository messageRepository, Category category) {
+        public ResetCmd(Bot bot, AIChatSessionManager sessionManager, AIChatMessageRepository messageRepository, com.eme22.bolo.repository.AIChatSessionSummaryRepository sessionSummaryRepository, Category category) {
             super(category);
             this.bot = bot;
             this.sessionManager = sessionManager;
             this.messageRepository = messageRepository;
+            this.sessionSummaryRepository = sessionSummaryRepository;
             this.name = "reset";
             this.help = "Reinicia el historial de conversación con la IA en este canal";
         }
@@ -182,6 +186,7 @@ public class AIChatCmd extends AdminCommand {
             String activeSession = sessionManager.getOrCreateSession(guildId, channelId, userId);
             sessionManager.forceReset(guildId, channelId, userId);
             messageRepository.deleteSession(activeSession);
+            sessionSummaryRepository.deleteBySessionId(activeSession);
             event.reply("🔄 **Historial de conversación reiniciado**. He olvidado nuestro contexto previo en este canal. ¡Empecemos de nuevo!").queue();
         }
 
@@ -193,6 +198,7 @@ public class AIChatCmd extends AdminCommand {
             String activeSession = sessionManager.getOrCreateSession(guildId, channelId, userId);
             sessionManager.forceReset(guildId, channelId, userId);
             messageRepository.deleteSession(activeSession);
+            sessionSummaryRepository.deleteBySessionId(activeSession);
             event.replySuccess("Historial de conversación reiniciado para ti en este canal.");
         }
     }
