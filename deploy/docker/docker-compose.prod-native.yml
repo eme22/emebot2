@@ -14,7 +14,7 @@ services:
     volumes:
       - mariadb_prod_native_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "healthcheck-sh", "--connect", "--innodb_initialized"]
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -25,6 +25,20 @@ services:
     container_name: embot-lavalink-prod-native
     environment:
       LAVALINK_SERVER_PASSWORD: ${LAVALINK_PASSWORD:?LAVALINK_PASSWORD is required}
+      SERVER_PORT: ${LAVALINK_PORT:-2333}
+      LAVALINK_SERVER_SOURCES_YOUTUBE: false
+      LAVALINK_PLUGINS_0_DEPENDENCY: dev.lavalink.youtube:youtube-plugin:1.18.2
+      PLUGINS_YOUTUBE_ENABLED: true
+      PLUGINS_YOUTUBE_ALLOWSEARCH: true
+      PLUGINS_YOUTUBE_ALLOWDIRECTVIDEOIDS: true
+      PLUGINS_YOUTUBE_ALLOWDIRECTPLAYLISTIDS: true
+      PLUGINS_YOUTUBE_CLIENTS_0: MUSIC
+      PLUGINS_YOUTUBE_CLIENTS_1: ANDROID_VR
+      PLUGINS_YOUTUBE_CLIENTS_2: WEB
+      PLUGINS_YOUTUBE_CLIENTS_3: WEBEMBEDDED
+      PLUGINS_YOUTUBE_CLIENTS_4: TVHTML5_SIMPLY
+    volumes:
+      - ./lavalink/plugins:/opt/Lavalink/plugins
     ports:
       - "${LAVALINK_PORT:-2333}:2333"
     restart: always
