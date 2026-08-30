@@ -154,6 +154,11 @@ openai:
   model: openrouter/free
   session-timeout-minutes: ${OPENAI_SESSION_TIMEOUT:15}
 
+exa:
+  mcp-url: ${EXA_MCP_URL:https://mcp.exa.ai/mcp?tools=web_search_exa}
+  api-key: ${EXA_API_KEY:}
+  timeout-seconds: ${EXA_TIMEOUT_SECONDS:30}
+
 lavalink:
   servers:
     - name: Node1
